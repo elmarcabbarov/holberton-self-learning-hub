@@ -31,7 +31,9 @@
   },
   "soon": "Not built yet",
   "errors": {
-    "notFound": "Page not found"
+    "notFound": "Page not found",
+    "saveFailed": "Could not save. Try again.",
+    "loadFailed": "Could not load this page."
   },
   "auth": {
     "title": "Sign in to your Hub",
@@ -43,5 +45,32 @@
     "invalid": "This link is invalid, expired or already used.",
     "rateLimited": "Too many attempts. Wait a minute and try a new link.",
     "error": "Sign-in failed. Try a new link."
+  },
+  "spaces": {
+    "title": "Spaces",
+    "intro": "A space holds one area you are learning, such as a Holberton project or a track.",
+    "nameLabel": "New space",
+    "namePlaceholder": "e.g. Simple Shell",
+    "create": "Create space",
+    "empty": "No spaces yet. Create your first one above.",
+    "topicCount": "{count, plural, one {# topic} other {# topics}}",
+    "archive": "Archive space"
+  },
+  "topics": {
+    "title": "Topics",
+    "intro": "Break the space into concepts you want to be able to explain without help.",
+    "nameLabel": "Topic name",
+    "namePlaceholder": "e.g. fork and execve",
+    "add": "Add topic",
+    "empty": "No topics yet.",
+    "rename": "Rename {name}",
+    "archive": "Archive {name}",
+    "archiveConfirm": "Confirm archiving {name}"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmArchive": "Click again to archive"
   }
 }
