@@ -44,3 +44,18 @@ describe("POST /api/import/project", () => {
     expect((await t.req({ method: "GET", url: "/api/spaces" })).json().spaces.length).toBe(before);
   });
 });
+
+describe("Codex review regressions (import)", () => {
+  it("undoes the database part when writing the note fails, and reports skipped notes", async () => {
+    const before = (await t.req({ method: "GET", url: "/api/spaces" })).json().spaces.length;
+    const original = t.app.vault.create.bind(t.app.vault);
+    t.app.vault.create = async () => { throw Object.assign(new Error("ENOSPC"), { code: "ENOSPC" }); };
+    const res = await t.req({ method: "POST", url: "/api/import/project", payload: payload() });
+    expect(res.statusCode).toBe(500);
+    expect((await t.req({ method: "GET", url: "/api/spaces" })).json().spaces.length).toBe(before);
+    expect(t.app.database.sqlite.prepare("SELECT COUNT(*) AS n FROM cards").get()).toEqual({ n: 0 });
+    t.app.vault.create = original;
+    const skipped = ImportProjectResult.parse((await t.req({ method: "POST", url: "/api/import/project", payload: payload({ path: "Holberton/CON.md", content: "x" }) })).json());
+    expect(skipped).toMatchObject({ noteId: null, noteSkipped: true, cards: 3 });
+  });
+});

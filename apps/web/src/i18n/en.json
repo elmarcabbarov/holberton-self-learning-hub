@@ -237,6 +237,7 @@
     "cardBack": "Say it out loud or whiteboard it, then check yourself. Could you explain it to a peer?",
     "cardBackWithResources": "Say it out loud or whiteboard it, then check yourself. Could you explain it to a peer? Resources: {resources}",
     "taskPlaceholder": "Task {n}",
-    "noteIntro": "Imported from the Holberton intranet on {date}. Solutions are yours to write — follow The Framework."
+    "noteIntro": "Imported from the Holberton intranet on {date}. Solutions are yours to write — follow The Framework.",
+    "noteSkipped": "The project note could not be created with this name. You can create it yourself on the Notes page."
   }
 }

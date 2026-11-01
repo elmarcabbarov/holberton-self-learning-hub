@@ -16,5 +16,7 @@ export const ImportProjectResult = z.object({
   cards: z.number().int(),
   noteId: z.string().uuid().nullable(),
   notePath: z.string().nullable(),
+  /** A note was requested but could not be created (e.g. the name is not allowed). */
+  noteSkipped: z.boolean(),
 });
 export type ImportProjectResult = z.infer<typeof ImportProjectResult>;

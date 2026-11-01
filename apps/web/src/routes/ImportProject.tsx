@@ -50,6 +50,7 @@ export function ImportProject() {
         <PageTitle id="import-title">{t("import.title")}</PageTitle>
         <Card className="mt-8">
           <h2 className="text-[20px] font-medium" role="status">{t("import.done", { cards: run.data.cards, topics: run.data.topics })}</h2>
+          {run.data.noteSkipped ? <p role="alert" className="mt-3 text-[14px]">{t("import.noteSkipped")}</p> : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/spaces/$spaceId" params={{ spaceId: run.data.spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-medium text-white hover:bg-brand-dark">{t("import.openSpace")}</Link>
             {run.data.noteId ? <Link to="/notes/$noteId" params={{ noteId: run.data.noteId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("import.openNote")}</Link> : null}

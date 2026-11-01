@@ -49,6 +49,7 @@ Repo:
 1. Second filter
 #advanced
 2. Sort it out
+mandatory
 Copyright © 2026 Holberton Inc, All rights reserved.
 AI
 People`;
@@ -81,5 +82,16 @@ describe("parseProject", () => {
   });
   it("returns empty structures for unrelated text", () => {
     expect(parseProject("hello world").groups).toEqual([]);
+  });
+});
+
+describe("Codex review regressions (parser)", () => {
+  it("keeps ambiguous lines as objectives instead of headings", () => {
+    const q = parseProject("P\nBy: X\nLearning Objectives\nList the available signals\nHow to handle a signal\nRequirements\n");
+    expect(q.groups).toEqual([{ name: null, objectives: ["List the available signals", "How to handle a signal"] }]);
+  });
+  it("ignores numbered steps inside a task body and respects the counter", () => {
+    const q = parseProject("P\nBy: X\nTasks\n0. Run it\nmandatory\nDo this:\n1. Read the input\n2. Execute the command\nTask 0 of 0\n");
+    expect(q.tasks).toEqual([{ number: 0, title: "Run it" }]);
   });
 });

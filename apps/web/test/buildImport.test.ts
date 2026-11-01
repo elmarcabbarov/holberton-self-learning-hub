@@ -32,5 +32,7 @@ describe("buildImport", () => {
   it("makes safe file names", () => {
     expect(noteFileName('a/b\\c:d*e?"f<g>h|i.')).toBe("a b c d e f g h i");
     expect(noteFileName("...")).toBe("Project");
+    expect(noteFileName(".NET basics")).toBe("NET basics");
+    expect(noteFileName("CON")).toBe("CON project");
   });
 });

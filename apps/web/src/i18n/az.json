@@ -237,6 +237,7 @@
     "cardBack": "Səsli de və ya lövhədə çək, sonra özünü yoxla. Bunu peer-ə izah edə bilərdinmi?",
     "cardBackWithResources": "Səsli de və ya lövhədə çək, sonra özünü yoxla. Bunu peer-ə izah edə bilərdinmi? Mənbələr: {resources}",
     "taskPlaceholder": "Task {n}",
-    "noteIntro": "{date} tarixində Holberton intranet-dən import olunub. Həlləri özün yazırsan — The Framework-ə əməl et."
+    "noteIntro": "{date} tarixində Holberton intranet-dən import olunub. Həlləri özün yazırsan — The Framework-ə əməl et.",
+    "noteSkipped": "Project qeydi bu adla yaradıla bilmədi. Onu Qeydlər səhifəsində özün yarada bilərsən."
   }
 }

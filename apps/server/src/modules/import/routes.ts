@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { ImportProjectRequest, ImportProjectResult } from "@hub/contracts";
+import { eq } from "drizzle-orm";
 import type { DatabaseHandle } from "../../lib/db/index.ts";
+import { cards as cardsTable, spaces, topics as topicsTable } from "../../lib/db/schema.ts";
 import { createCard } from "../cards/service.ts";
 import { createSpace, createTopic } from "../spaces/service.ts";
 import type { Vault } from "../vault/service.ts";
@@ -29,16 +31,28 @@ export async function registerImportRoutes(app: FastifyInstance, database: Datab
       return { spaceId: space.id, cards: n };
     });
 
-    let noteId: string | null = null; let notePath: string | null = null;
+    let noteId: string | null = null; let notePath: string | null = null; let noteSkipped = false;
     if (body.data.note) {
       const base = body.data.note.path.replace(/\.md$/i, "");
-      for (let i = 1; i <= 50 && !noteId; i++) {
-        const path = i === 1 ? `${base}.md` : `${base} (${i}).md`;
-        const out = await vault.create(path, body.data.note.content);
-        if (out.kind === "created") { noteId = out.note.id; notePath = out.note.path; }
-        else if (out.kind === "invalid") break; // bad path: keep the space and cards, skip the note
+      try {
+        for (let i = 1; i <= 50 && !noteId; i++) {
+          const path = i === 1 ? `${base}.md` : `${base} (${i}).md`;
+          const out = await vault.create(path, body.data.note.content);
+          if (out.kind === "created") { noteId = out.note.id; notePath = out.note.path; }
+          else if (out.kind === "invalid") break;
+        }
+      } catch (e) {
+        // Writing the note failed (e.g. disk full): undo the database part so a retry starts clean.
+        db.transaction(() => {
+          const topicIds = db.select({ id: topicsTable.id }).from(topicsTable).where(eq(topicsTable.spaceId, spaceId)).all().map((r) => r.id);
+          for (const id of topicIds) db.delete(cardsTable).where(eq(cardsTable.topicId, id)).run();
+          db.delete(topicsTable).where(eq(topicsTable.spaceId, spaceId)).run();
+          db.delete(spaces).where(eq(spaces.id, spaceId)).run();
+        });
+        throw e;
       }
+      noteSkipped = noteId === null;
     }
-    return reply.code(201).send(ImportProjectResult.parse({ spaceId, topics: body.data.topics.length, cards, noteId, notePath }));
+    return reply.code(201).send(ImportProjectResult.parse({ spaceId, topics: body.data.topics.length, cards, noteId, notePath, noteSkipped }));
   });
 }

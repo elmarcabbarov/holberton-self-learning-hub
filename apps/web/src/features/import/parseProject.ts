@@ -15,7 +15,7 @@ export interface ParsedProject {
   tasks: ParsedTask[];
 }
 
-const NOISE = /^(toggle navigation|description|quiz|ai|people|report an issue|welcome to the chat!.*|\d{1,3}%|novice|amateur|master|beginner|intermediate|advanced|mandatory|optional|#advanced)$/i;
+const NOISE = /^(toggle navigation|description|quiz|ai|people|report an issue|welcome to the chat!.*|\d{1,3}%|novice|amateur|master|beginner|intermediate)$/i;
 const LEVELS = /^(novice|amateur|master|beginner|intermediate|advanced)$/i;
 const META = /^(by:|weight:|your score|manual qa review|project will start|project over|an auto review|checker was released)/i;
 const QUESTIONISH = /^(what|how|why|when|where|which|who|understand|know|explain|describe|use|you must|you should|be able|the difference|difference)\b/i;
@@ -34,8 +34,19 @@ function sectionOf(line: string): Section | null {
   return null;
 }
 
-const isGroupHeader = (line: string, next: string | undefined) =>
-  next !== undefined && line.split(/\s+/).length <= 6 && !QUESTIONISH.test(line) && !line.endsWith("?") && !line.endsWith(".") && !line.endsWith(":");
+const TASK_MARKER = /^(mandatory|optional|#advanced|advanced)$/i;
+const titleCase = (line: string) => line.split(/\s+/).every((w) => /^[^a-z]/.test(w) || /^(and|or|of|the|in|on|to|a|an|vs)$/.test(w));
+
+/**
+ * Group headings need strong evidence (Codex review): "General", a known concept/resource title,
+ * or a short Title Case line. Anything ambiguous stays an objective, so no objective is lost.
+ */
+function isGroupHeader(line: string, next: string | undefined, known: Set<string>): boolean {
+  if (next === undefined || !QUESTIONISH.test(next)) return false;
+  if (QUESTIONISH.test(line) || /[?.:]$/.test(line)) return false;
+  if (/^general$/i.test(line) || known.has(line.toLowerCase())) return true;
+  return line.split(/\s+/).length <= 4 && titleCase(line);
+}
 
 export function parseProject(raw: string): ParsedProject {
   const lines = raw.replace(/\r\n?/g, "\n").split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -54,6 +65,8 @@ export function parseProject(raw: string): ParsedProject {
 
   let section: Section = "none";
   let lastTaskIndex = -1;
+  let taskHeaders = 0;
+  const known = new Set<string>();
   let group: ObjectiveGroup | null = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
@@ -61,16 +74,17 @@ export function parseProject(raw: string): ParsedProject {
     if (s) { section = s; group = null; continue; }
     if (NOISE.test(line) || META.test(line)) continue;
     switch (section) {
-      case "concepts": out.concepts.push(line); break;
+      case "concepts": out.concepts.push(line); known.add(line.toLowerCase()); break;
       case "resources":
         if (/^(read or watch|man or help|watch|read):?$/i.test(line)) break;
         out.resources.push(line);
+        known.add(line.toLowerCase());
         break;
       case "objectives": {
         if (/^at the end of this project, you are expected to be able to/i.test(line)) break;
         const next = lines[i + 1];
         const nextIsSection = next !== undefined && sectionOf(next) !== null;
-        if (!nextIsSection && isGroupHeader(line, next) && next !== undefined && QUESTIONISH.test(next)) {
+        if (!nextIsSection && isGroupHeader(line, next, known)) {
           group = { name: line, objectives: [] };
           out.groups.push(group);
           break;
@@ -84,8 +98,14 @@ export function parseProject(raw: string): ParsedProject {
         out.requirements.push(line);
         break;
       case "tasks": {
+        // A task heading is the first numbered line, or one followed by a task marker (classic layout).
+        // Numbered steps inside a task body are not tasks.
         const m = /^(\d{1,3})\.\s+(.+)$/.exec(line);
-        if (m && !out.tasks.some((x) => x.number === Number(m[1]))) out.tasks.push({ number: Number(m[1]), title: m[2]! });
+        const followedByMarker = lines[i + 1] !== undefined && TASK_MARKER.test(lines[i + 1]!);
+        if (m && (taskHeaders === 0 || followedByMarker) && !out.tasks.some((x) => x.number === Number(m[1]))) {
+          out.tasks.push({ number: Number(m[1]), title: m[2]! });
+          taskHeaders++;
+        }
         const of = /^task \d+ of (\d+)$/i.exec(line);
         if (of) lastTaskIndex = Math.max(lastTaskIndex, Number(of[1]));
         break;
@@ -95,6 +115,7 @@ export function parseProject(raw: string): ParsedProject {
   }
   out.groups = out.groups.filter((g) => g.objectives.length > 0);
   // "Task 0 of 5" → tasks 0..5; fill the ones whose titles were not on the copied page.
+  if (lastTaskIndex >= 0) out.tasks = out.tasks.filter((x) => x.number <= lastTaskIndex);
   for (let n = 0; n <= lastTaskIndex; n++) if (!out.tasks.some((x) => x.number === n)) out.tasks.push({ number: n, title: null });
   out.tasks.sort((a, b) => a.number - b.number);
   return out;
