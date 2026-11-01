@@ -19,4 +19,6 @@ await app.listen({ host: config.bindHost, port: config.port });
 
 // Printed directly (not through the request logger): one-time link, valid 10 minutes (D-047).
 console.log(`\nOpen the Hub: ${bootstrapLink(config, createBootstrapToken(app.database.db))}\n` +
-  `New link later: HUB_DATA=${config.dataDir}${config.dev ? " HUB_DEV=1" : ""} node ${fileURLToPath(new URL("./cli.ts", import.meta.url))} token\n`);
+  `New link later: ${process.env.HUB_IN_CONTAINER === "1"
+    ? "docker compose exec hub node apps/server/src/cli.ts token"
+    : `HUB_DATA=${config.dataDir}${config.dev ? " HUB_DEV=1" : ""} node ${fileURLToPath(new URL("./cli.ts", import.meta.url))} token`}\n`);

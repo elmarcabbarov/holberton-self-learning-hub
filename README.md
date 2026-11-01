@@ -16,7 +16,7 @@ A self-hosted learning workspace for Holberton School peers. It runs on your own
 ```sh
 cp .env.example .env
 docker compose up -d --build
-docker compose logs hub | grep "Open the Hub"     # one-time sign-in link (valid 10 minutes)
+docker compose logs -f hub | grep -m1 "Open the Hub"   # waits for the one-time sign-in link (valid 10 minutes)
 # need a new link later:
 docker compose exec hub node apps/server/src/cli.ts token
 ```
