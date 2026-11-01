@@ -41,3 +41,34 @@ export const topics = sqliteTable("topics", {
   updatedAt: text("updated_at").notNull(),
   archivedAt: text("archived_at"),
 }, (t) => [index("topics_space_position_idx").on(t.spaceId, t.position)]);
+
+/** Index of Markdown notes. Content lives in files (ADR-002); this is derived metadata. */
+export const notes = sqliteTable("notes", {
+  id: text("id").primaryKey(),
+  path: text("path").notNull().unique(),
+  foldKey: text("fold_key").notNull(),
+  title: text("title").notNull(),
+  contentSha256: text("content_sha256").notNull(),
+  size: integer("size").notNull(),
+  mtimeMs: integer("mtime_ms").notNull(),
+  eol: text("eol").notNull(),
+  bom: integer("bom", { mode: "boolean" }).notNull(),
+  readOnlyReason: text("read_only_reason"),
+  missingSince: text("missing_since"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [index("notes_fold_key_idx").on(t.foldKey), index("notes_sha_idx").on(t.contentSha256)]);
+
+/** File-operation journal (D-035, D-050): intent is durable before the filesystem changes. */
+export const fileOps = sqliteTable("file_ops", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(), // create | replace
+  noteId: text("note_id").notNull(),
+  path: text("path").notNull(),
+  tempPath: text("temp_path"),
+  beforeSha256: text("before_sha256"),
+  afterSha256: text("after_sha256").notNull(),
+  state: text("state").notNull(), // intent | done | conflict
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

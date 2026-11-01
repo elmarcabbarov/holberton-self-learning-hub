@@ -18,6 +18,10 @@ export interface HubConfig {
   publicPort: number;
   /** Development mode: also trusts the Vite dev server origin (D-046). */
   dev: boolean;
+  /** File watcher on the vault (off in unit tests). */
+  watchVault: boolean;
+  /** Polling watcher for bind mounts without inotify (HUB_VAULT_POLL=1). */
+  vaultPolling: boolean;
 }
 
 function parseMode(raw: string | undefined): HubMode {
@@ -60,6 +64,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HubConfig {
     port: parsePort(env.HUB_PORT),
     publicPort: env.HUB_PUBLIC_PORT ? parsePort(env.HUB_PUBLIC_PORT) : parsePort(env.HUB_PORT),
     dev: env.HUB_DEV === "1",
+    watchVault: env.HUB_VAULT_WATCH !== "0",
+    vaultPolling: env.HUB_VAULT_POLL === "1",
     bindHost,
     // Default is the repository root's .data, independent of the working directory.
     dataDir: env.HUB_DATA ? resolve(env.HUB_DATA) : fileURLToPath(new URL("../../../.data", import.meta.url)),

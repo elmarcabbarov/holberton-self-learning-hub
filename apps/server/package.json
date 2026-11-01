@@ -17,6 +17,7 @@
     "@fastify/static": "10.1.8",
     "@hub/contracts": "workspace:*",
     "better-sqlite3": "13.0.3",
+    "chokidar": "5.0.0",
     "drizzle-orm": "0.45.4",
     "fastify": "5.12.7",
     "zod": "4.6.7"
