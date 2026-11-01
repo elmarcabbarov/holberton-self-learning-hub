@@ -95,6 +95,25 @@ describe("cards API", () => {
     expect(list.cards).toHaveLength(1);
   });
 
+  it("cards of archived spaces and topics leave the review queue and the due count", async () => {
+    const space = Space.parse((await t.req({ method: "POST", url: "/api/spaces", payload: { name: "S" } })).json());
+    const a = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${space.id}/topics`, payload: { name: "a" } })).json());
+    const b = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${space.id}/topics`, payload: { name: "b" } })).json());
+    await t.req({ method: "POST", url: "/api/cards", payload: { topicId: a.id, front: "Qa", back: "A" } });
+    await t.req({ method: "POST", url: "/api/cards", payload: { topicId: b.id, front: "Qb", back: "A" } });
+    await t.req({ method: "POST", url: "/api/cards", payload: { front: "Loose", back: "A" } });
+    const due = async () => ReviewSummary.parse((await t.req({ method: "GET", url: "/api/review/summary" })).json()).due;
+    const fronts = async () => ReviewQueue.parse((await t.req({ method: "GET", url: "/api/review/queue" })).json()).items.map((i) => i.front).sort();
+    expect(await due()).toBe(3);
+    await t.req({ method: "PATCH", url: `/api/topics/${a.id}`, payload: { archived: true } });
+    expect(await fronts()).toEqual(["Loose", "Qb"]);
+    await t.req({ method: "PATCH", url: `/api/spaces/${space.id}`, payload: { archived: true } });
+    expect(await fronts()).toEqual(["Loose"]);
+    expect(await due()).toBe(1);
+    await t.req({ method: "PATCH", url: `/api/spaces/${space.id}`, payload: { archived: false } });
+    expect(await due()).toBe(2);
+  });
+
   it("validates input", async () => {
     expect((await t.req({ method: "POST", url: "/api/cards", payload: { front: "", back: "A" } })).statusCode).toBe(400);
     expect((await t.req({ method: "POST", url: "/api/cards", payload: { topicId: randomUUID(), front: "Q", back: "A" } })).json().error.messageKey).toBe("cards.badTopic");

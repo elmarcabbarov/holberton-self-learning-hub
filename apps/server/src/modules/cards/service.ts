@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, count, eq, gte, isNull, lte } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { createEmptyCard, fsrs, FSRSVersion, generatorParameters, Rating as FsrsRating, State, type Card as FsrsCard, type Grade } from "ts-fsrs";
 import type { UpdateCard } from "@hub/contracts";
 import type { Db } from "../../lib/db/index.ts";
-import { cardReviews, cards, notes, topics } from "../../lib/db/schema.ts";
+import { cardReviews, cards, notes, spaces, topics } from "../../lib/db/schema.ts";
 
 type CardRow = typeof cards.$inferSelect;
 
@@ -81,12 +81,17 @@ export function previewIntervals(row: CardRow, now = new Date()) {
   return { again: secs(FsrsRating.Again), hard: secs(FsrsRating.Hard), good: secs(FsrsRating.Good), easy: secs(FsrsRating.Easy) };
 }
 
-const active = () => and(isNull(cards.archivedAt), eq(cards.suspended, false));
+/** Reviewable: the card is active and neither its topic nor its space is archived. */
+const active = () => and(
+  isNull(cards.archivedAt), eq(cards.suspended, false),
+  or(isNull(cards.topicId), and(isNull(topics.archivedAt), isNull(spaces.archivedAt))),
+);
 
 export function reviewQueue(db: Db, opts: { now?: Date; limit?: number; spaceId?: string } = {}) {
   const now = opts.now ?? new Date();
   let rows = db.select({ card: cards, topicName: topics.name, spaceId: topics.spaceId }).from(cards)
     .leftJoin(topics, eq(topics.id, cards.topicId))
+    .leftJoin(spaces, eq(spaces.id, topics.spaceId))
     .where(and(active(), lte(cards.due, iso(now)))).orderBy(asc(cards.due)).all();
   if (opts.spaceId) rows = rows.filter((r) => r.spaceId === opts.spaceId);
   return {
@@ -96,7 +101,9 @@ export function reviewQueue(db: Db, opts: { now?: Date; limit?: number; spaceId?
 }
 
 export function reviewSummary(db: Db, now = new Date()) {
-  const due = db.select({ n: count() }).from(cards).where(and(active(), lte(cards.due, iso(now)))).get()?.n ?? 0;
+  const due = db.select({ n: count() }).from(cards)
+    .leftJoin(topics, eq(topics.id, cards.topicId)).leftJoin(spaces, eq(spaces.id, topics.spaceId))
+    .where(and(active(), lte(cards.due, iso(now)))).get()?.n ?? 0;
   const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
   const reviewedToday = db.select({ n: count() }).from(cardReviews).where(gte(cardReviews.reviewedAt, iso(startOfDay))).get()?.n ?? 0;
   return { due, reviewedToday };
