@@ -17,6 +17,7 @@
   --color-line: var(--hub-line);
   --color-fg: var(--hub-fg);
   --color-muted: var(--hub-muted);
+  --color-focus: var(--hub-focus);
 
   --radius-card: 20px;
   --radius-control: 4px;
@@ -31,6 +32,7 @@
   --hub-line: #474c52;
   --hub-fg: #f5f6fb;
   --hub-muted: #98a3ae;
+  --hub-focus: #ff6b8f;
 }
 
 :root[data-theme="light"] {
@@ -41,6 +43,7 @@
   --hub-line: #d4d4de;
   --hub-fg: #1a1718;
   --hub-muted: #5c5a63;
+  --hub-focus: #b70031;
 }
 
 @media (prefers-color-scheme: light) {
@@ -52,6 +55,7 @@
     --hub-line: #d4d4de;
     --hub-fg: #1a1718;
     --hub-muted: #5c5a63;
+    --hub-focus: #b70031;
   }
 }
 
@@ -66,7 +70,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--hub-focus); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

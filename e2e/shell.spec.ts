@@ -25,3 +25,11 @@ test("client routes fall back to the SPA", async ({ page }) => {
   await page.goto("/review");
   await expect(page.getByRole("navigation")).toBeVisible();
 });
+
+test("the bare /api path is a JSON 404 too", async ({ request }) => {
+  for (const url of ["/api", "/api?x=1"]) {
+    const res = await request.get(url);
+    expect(res.status()).toBe(404);
+    expect(res.headers()["content-type"]).toContain("application/json");
+  }
+});

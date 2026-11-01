@@ -2,6 +2,9 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import boundaries from "eslint-plugin-boundaries";
 import globals from "globals";
+import { builtinModules } from "node:module";
+
+const NODE_BUILTINS = builtinModules.flatMap((m) => (m.startsWith("node:") ? [m] : [m, `node:${m}`, `${m}/*`, `node:${m}/*`]));
 
 const allow = (from, to) => ({
   from: { element: { type: from } },
@@ -54,7 +57,7 @@ export default tseslint.config(
     files: ["apps/web/src/**/*.{ts,tsx}", "packages/contracts/src/**/*.ts"],
     languageOptions: { globals: globals.browser },
     rules: {
-      "no-restricted-imports": ["error", { patterns: [{ group: ["node:*", "fs", "path", "child_process", "os"], message: "Node built-ins are not allowed in browser-safe code (D-019)." }] }]
+      "no-restricted-imports": ["error", { patterns: [{ group: ["node:*", ...NODE_BUILTINS], message: "Node built-ins are not allowed in browser-safe code (D-019)." }] }]
     }
   },
   {

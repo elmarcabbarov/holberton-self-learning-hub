@@ -1,0 +1,7 @@
+- **P2 — Import restrictions are incomplete:** [eslint.config.js:57](/home/elmar/Projects/holberton-self-learning-hub/eslint.config.js:57) allows bare Node imports such as `crypto` and `http` in browser/contracts code; both passed an in-memory lint probe, violating D-019. **Fix:** prohibit every entry in Node’s `builtinModules`, including bare and `node:` forms.
+
+- **P2 — Keyboard focus has insufficient contrast:** [Settings.tsx:16](/home/elmar/Projects/holberton-self-learning-hub/apps/web/src/routes/Settings.tsx:16) uses `outline-brand` (`#e0003c`) against dark `bg-surface-2` (`#262b31`), giving **2.88:1**, below the [required 3:1 for authored focus indicators](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html). **Fix:** use a dedicated focus color with sufficient contrast against both themes’ backgrounds.
+
+- **P3 — API root incorrectly returns HTML 200:** [app.ts:21](/home/elmar/Projects/holberton-self-learning-hub/apps/server/src/app.ts:21) excludes only `/api/…` from SPA fallback; requests to `/api` and `/api?x=1` receive `index.html`. **Fix:** compare the pathname against both `/api` and the `/api/` prefix.
+
+**Clean CI:** No confirmed blocker found; the `.ts` imports and copied Docker workspace layout appear consistent. Lint and type checking passed locally on Node 26.12.0. Clean installation and unit tests were blocked by sandbox filesystem restrictions; build, E2E, and Docker were not run, so clean CI remains unverified. No files were modified.

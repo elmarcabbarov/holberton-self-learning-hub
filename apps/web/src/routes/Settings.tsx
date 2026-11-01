@@ -13,7 +13,7 @@ function Segmented<T extends string>({ legend, value, options, onChange }: {
       <legend className="mb-2 text-[13px] text-muted">{legend}</legend>
       <div className="inline-flex rounded-[var(--radius-control)] border border-line bg-surface-2 p-1">
         {options.map((o) => (
-          <label key={o.value} className={`cursor-pointer rounded-[3px] px-3 py-1.5 text-[14px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-brand ${value === o.value ? "bg-brand text-white" : "text-fg"}`}>
+          <label key={o.value} className={`cursor-pointer rounded-[3px] px-3 py-1.5 text-[14px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus ${value === o.value ? "bg-brand text-white" : "text-fg"}`}>
             <input type="radio" className="sr-only" name={legend} checked={value === o.value} onChange={() => onChange(o.value)} />
             {o.label}
           </label>

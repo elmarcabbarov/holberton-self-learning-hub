@@ -18,7 +18,8 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
     await app.register(fastifyStatic, { root: config.webDist, wildcard: false });
     // SPA fallback for client-side routes; API paths stay 404.
     app.setNotFoundHandler((req, reply) => {
-      if (req.url.startsWith("/api/")) return reply.code(404).send({ error: { code: "not_found", messageKey: "errors.notFound" } });
+      const path = req.url.split("?")[0] ?? "";
+      if (path === "/api" || path.startsWith("/api/")) return reply.code(404).send({ error: { code: "not_found", messageKey: "errors.notFound" } });
       return reply.sendFile("index.html");
     });
   }
