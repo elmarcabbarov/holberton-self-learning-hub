@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config.ts";
 import { buildApp } from "./app.ts";
 import { createBootstrapToken } from "./modules/auth/store.ts";
@@ -18,4 +19,4 @@ await app.listen({ host: config.bindHost, port: config.port });
 
 // Printed directly (not through the request logger): one-time link, valid 10 minutes (D-047).
 console.log(`\nOpen the Hub: ${bootstrapLink(config, createBootstrapToken(app.database.db))}\n` +
-  "New link later: node apps/server/src/cli.ts token\n");
+  `New link later: HUB_DATA=${config.dataDir}${config.dev ? " HUB_DEV=1" : ""} node ${fileURLToPath(new URL("./cli.ts", import.meta.url))} token\n`);

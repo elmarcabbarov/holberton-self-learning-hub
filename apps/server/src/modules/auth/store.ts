@@ -42,20 +42,31 @@ export function redeemBootstrapToken(db: Db, token: string, now = Date.now()): s
   });
 }
 
-/** Validates a session; slides the idle expiry at most once per minute. */
-export function touchSession(db: Db, sessionId: string, now = Date.now()): boolean {
+export type SessionCheck = { valid: false } | { valid: true; renewedMaxAgeSec?: number };
+
+/**
+ * Validates a session; slides the idle expiry at most once per minute.
+ * When it slides, `renewedMaxAgeSec` tells the caller to refresh the cookie (capped by the absolute expiry).
+ */
+export function checkSession(db: Db, sessionId: string, now = Date.now()): SessionCheck {
   const idHash = sha256(sessionId);
   const row = db.select().from(sessions).where(eq(sessions.idHash, idHash)).get();
-  if (!row) return false;
+  if (!row) return { valid: false };
   if (row.expiresAt <= iso(now) || row.absoluteExpiresAt <= iso(now)) {
     db.delete(sessions).where(eq(sessions.idHash, idHash)).run();
-    return false;
+    return { valid: false };
   }
   if (now - Date.parse(row.lastSeenAt) >= TOUCH_INTERVAL_MS) {
     const idle = Math.min(now + SESSION_IDLE_MS, Date.parse(row.absoluteExpiresAt));
     db.update(sessions).set({ lastSeenAt: iso(now), expiresAt: iso(idle) }).where(eq(sessions.idHash, idHash)).run();
+    return { valid: true, renewedMaxAgeSec: Math.floor((idle - now) / 1000) };
   }
-  return true;
+  return { valid: true };
+}
+
+/** Boolean convenience wrapper. */
+export function touchSession(db: Db, sessionId: string, now = Date.now()): boolean {
+  return checkSession(db, sessionId, now).valid;
 }
 
 export function deleteSession(db: Db, sessionId: string): void {

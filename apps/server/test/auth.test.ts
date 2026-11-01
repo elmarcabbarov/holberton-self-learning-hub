@@ -5,7 +5,7 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.ts";
 import { loadConfig } from "../src/config.ts";
-import { createBootstrapToken, redeemBootstrapToken, touchSession, SESSION_ABSOLUTE_MS } from "../src/modules/auth/store.ts";
+import { checkSession, createBootstrapToken, redeemBootstrapToken, touchSession, SESSION_ABSOLUTE_MS } from "../src/modules/auth/store.ts";
 import { sessionCookieName } from "../src/modules/auth/routes.ts";
 
 const HOST = "127.0.0.1:3000";
@@ -142,6 +142,21 @@ describe("session store", () => {
     const sid = redeemBootstrapToken(app.database.db, createBootstrapToken(app.database.db, now), now)!;
     expect(touchSession(app.database.db, sid, now + 1000)).toBe(true);
     expect(touchSession(app.database.db, sid, now + SESSION_ABSOLUTE_MS + 1)).toBe(false);
+  });
+});
+
+describe("sliding cookie", () => {
+  it("asks for a cookie refresh when the expiry slides, capped by the absolute limit", () => {
+    const now = Date.now();
+    const sid = redeemBootstrapToken(app.database.db, createBootstrapToken(app.database.db, now), now)!;
+    expect(checkSession(app.database.db, sid, now + 10_000)).toEqual({ valid: true });
+    const later = checkSession(app.database.db, sid, now + 2 * 60_000);
+    expect(later.valid && later.renewedMaxAgeSec).toBeGreaterThan(29 * 24 * 3600);
+    // Stay active (touch every 29 days) until one hour before the absolute limit.
+    const day = 24 * 3600_000;
+    for (const d of [29, 58, 87]) expect(checkSession(app.database.db, sid, now + d * day).valid).toBe(true);
+    const nearEnd = checkSession(app.database.db, sid, now + SESSION_ABSOLUTE_MS - 3600_000);
+    expect(nearEnd.valid && nearEnd.renewedMaxAgeSec).toBeLessThanOrEqual(3600);
   });
 });
 

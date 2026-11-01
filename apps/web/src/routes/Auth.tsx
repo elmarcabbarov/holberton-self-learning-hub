@@ -19,7 +19,7 @@ export function Auth() {
     started.current = true;
     const token = takeBootstrapToken();
     if (!token) { setResult("invalid"); return; }
-    void redeemToken(token).then(async (r) => {
+    void redeemToken(token).catch((): BootstrapResult => "error").then(async (r) => {
       setResult(r);
       if (r === "ok") {
         // Write the server's answer straight into the cache: an initial status request sent
