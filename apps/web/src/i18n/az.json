@@ -15,7 +15,16 @@
     "title": "Bu gün",
     "emptyTitle": "Hələ təkrarlanacaq heç nə yoxdur",
     "emptyBody": "Bir sahə yarat və ilk qeydini əlavə et. Qeydlərindən yaratdığın kartlar vaxtı çatanda burada görünəcək.",
-    "emptyCta": "Sahə yarat"
+    "emptyCta": "Sahə yarat",
+    "reviewHeading": "Təkrar",
+    "due": "{count, plural, one {# kart gözləyir} other {# kart gözləyir}}",
+    "startReview": "Təkrara başla",
+    "noneDue": "Gözləyən kart yoxdur. Qeyd yazmaq və ya kart əlavə etmək üçün yaxşı vaxtdır.",
+    "reviewedToday": "{count, plural, one {Bu gün # kart təkrar edildi} other {Bu gün # kart təkrar edildi}}",
+    "continueHeading": "Davam et",
+    "noNotes": "Hələ qeyd yoxdur.",
+    "writeNote": "Qeyd yaz",
+    "spacesHeading": "Sahələrin"
   },
   "settings": {
     "title": "Ayarlar",

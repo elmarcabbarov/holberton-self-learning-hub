@@ -15,7 +15,16 @@
     "title": "Today",
     "emptyTitle": "Nothing to review yet",
     "emptyBody": "Create a space and add your first note. Cards you make from your notes will show up here when they are due.",
-    "emptyCta": "Create a space"
+    "emptyCta": "Create a space",
+    "reviewHeading": "Review",
+    "due": "{count, plural, one {# card due} other {# cards due}}",
+    "startReview": "Start review",
+    "noneDue": "Nothing due. Good time to write notes or add cards.",
+    "reviewedToday": "{count, plural, one {# card reviewed today} other {# cards reviewed today}}",
+    "continueHeading": "Continue",
+    "noNotes": "No notes yet.",
+    "writeNote": "Write a note",
+    "spacesHeading": "Your spaces"
   },
   "settings": {
     "title": "Settings",
