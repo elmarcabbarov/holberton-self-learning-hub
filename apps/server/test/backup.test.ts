@@ -102,3 +102,38 @@ describe("restore safety", () => {
     }), "backup_newer_than_app");
   });
 });
+
+describe("Codex review regressions (backup/restore)", () => {
+  it("archives staged copies: an external edit after staging cannot break the backup", async () => {
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "e.md", content: "staged text" } });
+    const { createBackup } = await import("../src/modules/backup/create.ts");
+    const r = await createBackup({
+      database: t.app.database, vault: t.app.vault, dataDir: t.dir, appVersion: "test",
+      hooks: { afterStaging: async () => { writeFileSync(join(t.dir, "vault", "e.md"), "edited after"); } }, // same length
+    });
+    const target = tmp();
+    await restoreBackup(r.path, target);
+    expect(readFileSync(join(target, "vault", "e.md"), "utf8")).toBe("staged text");
+  });
+
+  it("rejects (does not crash) when a staged file disappears before archiving", async () => {
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "gone.md", content: "x" } });
+    const { createBackup } = await import("../src/modules/backup/create.ts");
+    await expect(createBackup({
+      database: t.app.database, vault: t.app.vault, dataDir: t.dir, appVersion: "test",
+      hooks: { afterStaging: async (stage) => { rmSync(join(stage, "gone.md")); } },
+    })).rejects.toThrow();
+  });
+
+  it("an interrupted restore blocks server start and is rolled back by the next restore", async () => {
+    const { zip } = await seedAndBackup();
+    const target = tmp();
+    await expect(restoreBackup(zip, target, { afterVaultPublished: () => { throw new Error("power cut"); } })).rejects.toThrow("power cut");
+    await expect(buildApp(loadConfig({ HUB_DATA: target, HUB_VAULT_WATCH: "0" }))).rejects.toThrow(/restore did not finish/);
+    const m = await restoreBackup(zip, target);
+    expect(m.counts.cards).toBe(1);
+    const app = await buildApp(loadConfig({ HUB_DATA: target, HUB_VAULT_WATCH: "0" }));
+    expect(app.vault.list().length).toBe(2);
+    await app.close();
+  });
+});

@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { createHash, randomUUID } from "node:crypto";
 import { createWriteStream, readFileSync } from "node:fs";
-import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -62,6 +62,22 @@ export async function inspectBackup(zipPath: string): Promise<BackupManifest> {
   } finally { zip.close(); }
 }
 
+/** Present while a restore is publishing files; the server refuses to start until restore finishes. */
+export const RESTORE_MARKER = ".restore-pending";
+
+export async function restorePending(dataDir: string): Promise<boolean> {
+  return stat(join(dataDir, RESTORE_MARKER)).then(() => true, () => false);
+}
+
+/** Undo a half-published restore. The target was empty before, so removing what it published is safe. */
+async function rollbackPartialRestore(dataDir: string): Promise<void> {
+  await rm(join(dataDir, "data", "hub.db"), { force: true });
+  await rm(join(dataDir, "data", "hub.db-wal"), { force: true });
+  await rm(join(dataDir, "data", "hub.db-shm"), { force: true });
+  await rm(join(dataDir, "vault"), { recursive: true, force: true });
+  await rm(join(dataDir, RESTORE_MARKER), { force: true });
+}
+
 async function isEmptyTarget(dataDir: string): Promise<boolean> {
   const db = await stat(join(dataDir, "data", "hub.db")).then(() => true, () => false);
   const vaultEntries = await readdir(join(dataDir, "vault")).catch(() => [] as string[]);
@@ -78,7 +94,8 @@ function appMigrationCount(): number {
  * directory and verified (manifest, every hash, no extra or missing files, schema not newer)
  * before anything is moved into place.
  */
-export async function restoreBackup(zipPath: string, dataDir: string): Promise<BackupManifest> {
+export async function restoreBackup(zipPath: string, dataDir: string, hooks: { afterVaultPublished?: () => void } = {}): Promise<BackupManifest> {
+  if (await restorePending(dataDir)) await rollbackPartialRestore(dataDir);
   if (!(await isEmptyTarget(dataDir))) throw new RestoreError("target_not_empty", dataDir);
   const manifest = await inspectBackup(zipPath);
   if (manifest.migrations > appMigrationCount()) throw new RestoreError("backup_newer_than_app");
@@ -118,14 +135,18 @@ export async function restoreBackup(zipPath: string, dataDir: string): Promise<B
       if (check.pragma("integrity_check", { simple: true }) !== "ok") throw new RestoreError("db_corrupt");
     } finally { check.close(); }
 
-    // Verified: move into place.
+    // Verified: publish. Marker first, vault next, database LAST (the commit point).
+    // An interruption leaves the marker: the server refuses to start and the next restore rolls back first.
     await mkdir(join(dataDir, "data"), { recursive: true });
-    await rename(join(staging, "hub.db"), join(dataDir, "data", "hub.db"));
+    await writeFile(join(dataDir, RESTORE_MARKER), JSON.stringify({ zip: zipPath, startedAt: new Date().toISOString() }), { flag: "w" });
     await rm(join(dataDir, "vault"), { recursive: true, force: true }); // empty by precondition
     await rename(join(staging, "vault"), join(dataDir, "vault")).catch(async (err: NodeJS.ErrnoException) => {
       if (err.code === "ENOENT") await mkdir(join(dataDir, "vault"), { recursive: true }); // backup without vault files
       else throw err;
     });
+    hooks.afterVaultPublished?.();
+    await rename(join(staging, "hub.db"), join(dataDir, "data", "hub.db"));
+    await rm(join(dataDir, RESTORE_MARKER), { force: true });
     return manifest;
   } finally {
     await rm(staging, { recursive: true, force: true });
