@@ -11,6 +11,7 @@ export const ErrorCode = z.enum([
   "unsupported_media_type",
   "invalid_token",
   "rate_limited",
+  "read_only",
   "internal",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
