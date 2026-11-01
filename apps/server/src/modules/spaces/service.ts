@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, count, eq, isNull, max } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, isNull, max } from "drizzle-orm";
 import { MAX_TOPIC_POSITION, type CreateSpace, type CreateTopic, type UpdateSpace, type UpdateTopic } from "@hub/contracts";
 import type { Db } from "../../lib/db/index.ts";
 import { spaces, topics } from "../../lib/db/schema.ts";
@@ -16,9 +16,9 @@ function topicCount(db: Db, spaceId: string): number {
 
 const toSpace = (db: Db, row: SpaceRow) => ({ ...row, topicCount: topicCount(db, row.id) });
 
-export function listSpaces(db: Db, includeArchived = false) {
+export function listSpaces(db: Db, archived = false) {
   const rows = db.select().from(spaces)
-    .where(includeArchived ? undefined : isNull(spaces.archivedAt))
+    .where(archived ? isNotNull(spaces.archivedAt) : isNull(spaces.archivedAt))
     .orderBy(asc(spaces.createdAt)).all();
   return rows.map((r) => toSpace(db, r));
 }
@@ -29,7 +29,10 @@ export function getSpace(db: Db, id: string) {
   const topicRows = db.select().from(topics)
     .where(and(eq(topics.spaceId, id), isNull(topics.archivedAt)))
     .orderBy(asc(topics.position), asc(topics.createdAt)).all();
-  return { ...toSpace(db, row), topics: topicRows };
+  const archivedTopics = db.select().from(topics)
+    .where(and(eq(topics.spaceId, id), isNotNull(topics.archivedAt)))
+    .orderBy(asc(topics.position), asc(topics.createdAt)).all();
+  return { ...toSpace(db, row), topics: topicRows, archivedTopics };
 }
 
 export function createSpace(db: Db, input: CreateSpace) {

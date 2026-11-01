@@ -12,7 +12,10 @@ const notFound = (reply: FastifyReply) => reply.code(404).send({ error: { code: 
 export async function registerSpaceRoutes(app: FastifyInstance, database: DatabaseHandle): Promise<void> {
   const { db } = database;
 
-  app.get("/api/spaces", async () => SpaceList.parse({ spaces: svc.listSpaces(db) }));
+  app.get("/api/spaces", async (req) => {
+    const archived = (req.query as { archived?: string } | undefined)?.archived === "1";
+    return SpaceList.parse({ spaces: svc.listSpaces(db, archived) });
+  });
 
   app.post("/api/spaces", async (req, reply) => {
     const body = CreateSpace.safeParse(req.body);

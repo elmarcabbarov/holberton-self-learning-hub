@@ -11,6 +11,18 @@ export function useSpaces() {
   return useQuery({ queryKey: spaceKeys.all, queryFn: () => apiJson("/api/spaces", SpaceList) });
 }
 
+export function useArchivedSpaces(enabled: boolean) {
+  return useQuery({ queryKey: [...spaceKeys.all, "archived"], queryFn: () => apiJson("/api/spaces?archived=1", SpaceList), enabled });
+}
+
+export function useRestoreSpace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiJson(`/api/spaces/${id}`, Space, { method: "PATCH", body: { archived: false } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: spaceKeys.all }),
+  });
+}
+
 export function useSpace(id: string) {
   return useQuery({ queryKey: spaceKeys.detail(id), queryFn: () => apiJson(`/api/spaces/${id}`, SpaceDetail) });
 }
