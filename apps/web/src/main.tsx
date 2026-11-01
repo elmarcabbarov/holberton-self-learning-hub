@@ -10,7 +10,8 @@ import { captureBootstrapToken } from "./bootstrapToken.ts";
 
 captureBootstrapToken();
 applyTheme(getTheme());
-const queryClient = new QueryClient();
+// The server is local: one quick retry is enough; longer backoff only delays visible errors.
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, retryDelay: 300 } } });
 const el = document.getElementById("root");
 if (!el) throw new Error("#root missing");
 
