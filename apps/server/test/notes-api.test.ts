@@ -95,3 +95,14 @@ describe("search, backlinks and meta API", () => {
     expect((await t.req({ method: "GET", url: "/api/notes/search" })).statusCode).toBe(400);
   });
 });
+
+describe("recent notes", () => {
+  it("lists notes by most recent change", async () => {
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "old.md", content: "a" } });
+    await new Promise((r) => setTimeout(r, 20));
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "new.md", content: "b" } });
+    const res = NoteList.parse((await t.req({ method: "GET", url: "/api/notes/recent?limit=2" })).json());
+    expect(res.notes.map((n) => n.path)).toEqual(["new.md", "old.md"]);
+    expect((await t.req({ method: "GET", url: "/api/notes/recent?limit=99" })).statusCode).toBe(400);
+  });
+});

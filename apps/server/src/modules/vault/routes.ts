@@ -46,6 +46,14 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault, da
     return NoteList.parse({ notes: page.map(summary), nextCursor: rows.length > PAGE ? page[page.length - 1]!.path : null });
   });
 
+  // Most recently changed present notes, for "Continue where you left off".
+  app.get("/api/notes/recent", async (req, reply) => {
+    const q = z.object({ limit: z.coerce.number().int().min(1).max(20).default(5) }).safeParse(req.query ?? {});
+    if (!q.success) return err(reply, 400, "validation_failed", "errors.validation");
+    const rows = vault.list().filter((r) => !r.missingSince).sort((a, b) => b.mtimeMs - a.mtimeMs).slice(0, q.data.limit);
+    return NoteList.parse({ notes: rows.map(summary), nextCursor: null });
+  });
+
   app.get("/api/vault/status", async () => VaultStatus.parse({ lastReconcile: vault.lastReconcile, collisions: vault.collisions() }));
 
   app.get("/api/notes/:id", async (req, reply) => {
