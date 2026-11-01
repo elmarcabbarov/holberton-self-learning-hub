@@ -186,5 +186,18 @@
       "month": "{n} mo",
       "year": "{n} y"
     }
+  },
+  "backup": {
+    "title": "Backups",
+    "intro": "A backup holds your database and every file in the Hub vault, checked with hashes. Keep copies somewhere else too. Linked vaults are not included.",
+    "create": "Create backup",
+    "creating": "Creating…",
+    "created": "Backup created: {notes} notes, {cards} cards, {files} files.",
+    "failed": "Backup failed. Check the server log.",
+    "listLabel": "Backups",
+    "download": "Download",
+    "none": "No backups yet.",
+    "restoreTitle": "Restore",
+    "restoreBody": "Restore runs from the command line into an empty data folder while the Hub is stopped. Inspect first, then restore:"
   }
 }

@@ -80,6 +80,9 @@ export class Vault {
 
   idle(): Promise<void> { return this.queue.idle(); }
 
+  /** Runs `task` with vault writes paused (used for consistent backups). */
+  exclusive<T>(task: () => Promise<T>): Promise<T> { return this.queue.run(task); }
+
   list(): NoteRow[] {
     return this.db.select().from(notes).orderBy(notes.path).all();
   }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LANGUAGES, setLanguage, type Language } from "../i18n/index.ts";
 import { applyTheme, getTheme, type Theme } from "../theme.ts";
+import { BackupPanel } from "../components/BackupPanel.tsx";
 
 const LANG_LABEL: Record<Language, string> = { en: "English", az: "Azərbaycan" };
 
@@ -47,6 +48,7 @@ export function Settings() {
           onChange={(v) => { setTheme(v); applyTheme(v); }}
         />
       </div>
+      <BackupPanel />
     </section>
   );
 }

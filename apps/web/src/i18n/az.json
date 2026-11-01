@@ -186,5 +186,18 @@
       "month": "{n} ay",
       "year": "{n} il"
     }
+  },
+  "backup": {
+    "title": "Backup-lar",
+    "intro": "Backup verilənlər bazasını və Hub vault-dakı bütün faylları saxlayır, hər biri hash ilə yoxlanılır. Nüsxələri başqa yerdə də saxla. Qoşulmuş (linked) vault-lar daxil deyil.",
+    "create": "Backup yarat",
+    "creating": "Yaradılır…",
+    "created": "Backup yaradıldı: {notes} qeyd, {cards} kart, {files} fayl.",
+    "failed": "Backup alınmadı. Server logunu yoxla.",
+    "listLabel": "Backup-lar",
+    "download": "Yüklə",
+    "none": "Hələ backup yoxdur.",
+    "restoreTitle": "Bərpa",
+    "restoreBody": "Bərpa Hub dayandırılmış halda, boş data qovluğuna komanda sətrindən aparılır. Əvvəl yoxla, sonra bərpa et:"
   }
 }

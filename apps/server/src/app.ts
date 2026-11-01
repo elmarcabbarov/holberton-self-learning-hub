@@ -10,6 +10,8 @@ import { registerAuth } from "./modules/auth/routes.ts";
 import { pruneAuth } from "./modules/auth/store.ts";
 import { registerSpaceRoutes } from "./modules/spaces/routes.ts";
 import { registerCardRoutes } from "./modules/cards/routes.ts";
+import { registerBackupRoutes } from "./modules/backup/routes.ts";
+import { restorePending } from "./modules/backup/restore.ts";
 import { join } from "node:path";
 import { acquireLock } from "./lib/lockfile.ts";
 import { Vault } from "./modules/vault/service.ts";
@@ -29,6 +31,9 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
   });
 
+  if (await restorePending(config.dataDir)) {
+    throw new Error("A restore did not finish. Run the restore command again before starting the Hub.");
+  }
   const database = openDatabase(config.dataDir);
   const releaseLock = await acquireLock(join(config.dataDir, "data", "hub.lock.db")).catch((e) => { database.close(); throw e; });
   app.decorate("database", database);
@@ -54,6 +59,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerAuth(app, database);
   await registerSpaceRoutes(app, database);
   await registerCardRoutes(app, database);
+  await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
   await registerVaultRoutes(app, vault, database);
 
   // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.
