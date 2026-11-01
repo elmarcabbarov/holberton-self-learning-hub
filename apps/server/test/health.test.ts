@@ -1,14 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { HealthResponse } from "@hub/contracts";
 import { buildApp } from "../src/app.ts";
 import { loadConfig } from "../src/config.ts";
 
 describe("GET /api/health", () => {
-  it("returns a contract-valid payload", async () => {
-    const app = await buildApp(loadConfig({ HUB_DATA: "/tmp/hub-test" }));
+  let dir = "";
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  it("returns a contract-valid payload with db ok", async () => {
+    dir = mkdtempSync(join(tmpdir(), "hub-health-"));
+    const app = await buildApp(loadConfig({ HUB_DATA: dir }));
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);
-    expect(HealthResponse.parse(res.json()).mode).toBe("local");
+    const body = HealthResponse.parse(res.json());
+    expect(body.mode).toBe("local");
+    expect(body.db).toBe("ok");
     await app.close();
   });
 });
