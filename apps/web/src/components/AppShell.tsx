@@ -37,11 +37,11 @@ export function AppShell() {
   const health = useQuery({ queryKey: ["health"], queryFn: fetchHealth, refetchInterval: 30_000, retry: 1 });
 
   return (
-    <div className="flex h-full">
+    <div className="flex min-h-full">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-[4px] focus:bg-brand focus:px-3 focus:py-2 focus:text-white">
         {t("app.skip")}
       </a>
-      <nav aria-label={t("nav.primary")} className="flex w-[72px] shrink-0 flex-col items-center gap-2 border-r border-line py-4">
+      <nav aria-label={t("nav.primary")} className="sticky top-0 flex h-screen w-[72px] shrink-0 flex-col items-center gap-2 border-r border-line py-4">
         <Link to="/" aria-label={t("app.name")} className="mb-4 flex h-11 w-11 items-center justify-center">
           <img src="/brand/seahorse-red.svg" alt="" className="h-9 w-auto" />
         </Link>

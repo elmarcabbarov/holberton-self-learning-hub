@@ -20,6 +20,7 @@ export function Spaces() {
     <section aria-labelledby="spaces-title">
       <PageTitle id="spaces-title">{t("spaces.title")}</PageTitle>
       <p className="mt-2 max-w-prose text-muted">{t("spaces.intro")}</p>
+      <Link to="/import" className="mt-4 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("import.cta")}</Link>
 
       <Card className="mt-8">
         <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
