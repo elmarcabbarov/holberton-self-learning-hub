@@ -10,6 +10,7 @@ import { registerAuth } from "./modules/auth/routes.ts";
 import { pruneAuth } from "./modules/auth/store.ts";
 import { registerSpaceRoutes } from "./modules/spaces/routes.ts";
 import { registerCardRoutes } from "./modules/cards/routes.ts";
+import { registerBackupRoutes } from "./modules/backup/routes.ts";
 import { join } from "node:path";
 import { acquireLock } from "./lib/lockfile.ts";
 import { Vault } from "./modules/vault/service.ts";
@@ -54,6 +55,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerAuth(app, database);
   await registerSpaceRoutes(app, database);
   await registerCardRoutes(app, database);
+  await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
   await registerVaultRoutes(app, vault, database);
 
   // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.

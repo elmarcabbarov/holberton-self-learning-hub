@@ -4,3 +4,4 @@ export * from "./auth.ts";
 export * from "./spaces.ts";
 export * from "./notes.ts";
 export * from "./cards.ts";
+export * from "./backups.ts";
