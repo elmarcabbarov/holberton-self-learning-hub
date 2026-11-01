@@ -18,12 +18,15 @@ export function Today() {
   const spaces = useSpaces();
 
   const loading = summary.isPending || recent.isPending || spaces.isPending;
-  const nothingYet = !loading && (spaces.data?.spaces.length ?? 0) === 0 && (recent.data?.notes.length ?? 0) === 0 && (summary.data?.due ?? 0) === 0;
+  const failed = summary.isError || recent.isError || spaces.isError;
+  // Empty states only from successful responses: a failed request is an error, never "nothing to do".
+  const nothingYet = !loading && !failed && (spaces.data?.spaces.length ?? 0) === 0 && (recent.data?.notes.length ?? 0) === 0 && (summary.data?.due ?? 0) === 0;
 
   return (
     <section aria-labelledby="today-title">
       <PageTitle id="today-title">{t("today.title")}</PageTitle>
       {loading ? <p className="mt-6 text-muted" role="status">{t("common.loading")}</p> : null}
+      {failed ? <p role="alert" className="mt-6">{t("errors.loadFailed")}</p> : null}
 
       {nothingYet ? (
         <Card className="mt-8">
@@ -33,7 +36,7 @@ export function Today() {
         </Card>
       ) : null}
 
-      {!loading && !nothingYet ? (
+      {!loading && !failed && !nothingYet ? (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <Card>
             <h2 className="text-[14px] font-medium text-muted">{t("today.reviewHeading")}</h2>

@@ -16,3 +16,11 @@ test("Today shows due cards, recent notes and spaces from real data", async ({ p
   await page.getByRole("link", { name: "Start review" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
 });
+
+test("Today shows an error instead of empty states when data cannot be loaded", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/review/summary", (r) => r.fulfill({ status: 500, contentType: "application/json", body: '{"error":{"code":"internal","messageKey":"errors.internal"}}' }));
+  await page.goto("/");
+  await expect(page.getByRole("alert")).toHaveText("Could not load this page.");
+  await expect(page.getByText("Nothing due")).toHaveCount(0);
+});
