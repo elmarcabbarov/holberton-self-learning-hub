@@ -1,0 +1,36 @@
+{
+  "name": "@hub/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter-tight": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@hub/contracts": "workspace:*",
+    "@tanstack/react-query": "5.105.1",
+    "@tanstack/react-router": "1.170.46",
+    "i18next": "26.6.0",
+    "i18next-icu": "2.6.1",
+    "lucide-react": "1.66.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-i18next": "17.1.10",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "app": { "name": "Self-Learning Hub", "skip": "Skip to content" },
+  "nav": { "today": "Today", "spaces": "Spaces", "review": "Review", "settings": "Settings", "primary": "Primary" },
+  "today": {
+    "title": "Today",
+    "emptyTitle": "Nothing to review yet",
+    "emptyBody": "Create a space and add your first note. Cards you make from your notes will show up here when they are due.",
+    "emptyCta": "Create a space"
+  },
+  "settings": { "title": "Settings", "language": "Interface language", "theme": "Theme", "themeSystem": "System", "themeDark": "Dark", "themeLight": "Light" },
+  "status": { "serverOk": "Server running · v{version}", "serverDown": "Cannot reach the local server" },
+  "soon": "Not built yet",
+  "errors": { "notFound": "Page not found" }
+}

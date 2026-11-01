@@ -1,0 +1,42 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions: { contents: read }
+concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc }
+      - run: npm install -g pnpm@12.15.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+  e2e:
+    runs-on: ubuntu-24.04
+    needs: check
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc }
+      - run: npm install -g pnpm@12.15.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+        env: { CI: "true" }
+  docker:
+    runs-on: ubuntu-24.04
+    needs: check
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -f docker/Dockerfile -t hub:ci .
+      - name: Smoke test container
+        run: |
+          docker run -d --name hub -p 127.0.0.1:3000:3000 --read-only --tmpfs /tmp --cap-drop ALL hub:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:3000/api/health && exit 0; sleep 1; done
+          docker logs hub; exit 1

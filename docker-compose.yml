@@ -1,0 +1,18 @@
+services:
+  hub:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    image: holberton-self-learning-hub:dev
+    # Container listens on 0.0.0.0; the host publishes loopback only (D-036).
+    ports: ["127.0.0.1:${HUB_PORT:-3000}:3000"]
+    environment:
+      HUB_MODE: ${HUB_MODE:-local}
+    volumes:
+      - ${HUB_DATA:-./.data}:/data
+      # Optional read-only linked vault (OBSIDIAN_STRATEGY §7). Uncomment and set LINKED_VAULT in .env.
+      # - ${LINKED_VAULT}:/linked:ro
+    user: "${UID:-1000}:${GID:-1000}"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped

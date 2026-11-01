@@ -1,0 +1,14 @@
+{
+  "app": { "name": "Self-Learning Hub", "skip": "Məzmuna keç" },
+  "nav": { "today": "Bu gün", "spaces": "Sahələr", "review": "Təkrar", "settings": "Ayarlar", "primary": "Əsas naviqasiya" },
+  "today": {
+    "title": "Bu gün",
+    "emptyTitle": "Hələ təkrarlanacaq heç nə yoxdur",
+    "emptyBody": "Bir sahə yarat və ilk qeydini əlavə et. Qeydlərindən yaratdığın kartlar vaxtı çatanda burada görünəcək.",
+    "emptyCta": "Sahə yarat"
+  },
+  "settings": { "title": "Ayarlar", "language": "İnterfeys dili", "theme": "Mövzu", "themeSystem": "Sistem", "themeDark": "Qaranlıq", "themeLight": "İşıqlı" },
+  "status": { "serverOk": "Server işləyir · v{version}", "serverDown": "Lokal serverə qoşulmaq olmur" },
+  "soon": "Hələ hazır deyil",
+  "errors": { "notFound": "Səhifə tapılmadı" }
+}

@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.105.1'
+  - '@tanstack/react-query@5.105.1'
+  - i18next@26.6.0
+  - react-i18next@17.1.10
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild

@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter-tight";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Tokens follow the Holberton intranet palette (docs/INTRANET_FINDINGS.md §4). */
+@theme {
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-brand: #e0003c;
+  --color-brand-dark: #b70031;
+  --color-brand-darker: #a3002c;
+
+  --color-bg: var(--hub-bg);
+  --color-surface: var(--hub-surface);
+  --color-surface-2: var(--hub-surface-2);
+  --color-line: var(--hub-line);
+  --color-fg: var(--hub-fg);
+  --color-muted: var(--hub-muted);
+
+  --radius-card: 20px;
+  --radius-control: 4px;
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --hub-bg: #1c2128;
+  --hub-surface: #31363c;
+  --hub-surface-2: #262b31;
+  --hub-line: #474c52;
+  --hub-fg: #f5f6fb;
+  --hub-muted: #98a3ae;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --hub-bg: #f0f0f5;
+  --hub-surface: #ffffff;
+  --hub-surface-2: #e6e6ee;
+  --hub-line: #d4d4de;
+  --hub-fg: #1a1718;
+  --hub-muted: #5c5a63;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --hub-bg: #f0f0f5;
+    --hub-surface: #ffffff;
+    --hub-surface-2: #e6e6ee;
+    --hub-line: #d4d4de;
+    --hub-fg: #1a1718;
+    --hub-muted: #5c5a63;
+  }
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--hub-bg);
+  color: var(--hub-fg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

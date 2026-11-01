@@ -1,0 +1,22 @@
+import { z } from "zod";
+
+/** Stable error codes. `messageKey` is an i18n key; never a raw server message. */
+export const ErrorCode = z.enum([
+  "unauthorized",
+  "forbidden_host",
+  "forbidden_origin",
+  "not_found",
+  "validation_failed",
+  "conflict",
+  "internal",
+]);
+export type ErrorCode = z.infer<typeof ErrorCode>;
+
+export const ApiError = z.object({
+  error: z.object({
+    code: ErrorCode,
+    messageKey: z.string(),
+    details: z.unknown().optional(),
+  }),
+});
+export type ApiError = z.infer<typeof ApiError>;
