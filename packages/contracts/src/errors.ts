@@ -8,6 +8,9 @@ export const ErrorCode = z.enum([
   "not_found",
   "validation_failed",
   "conflict",
+  "unsupported_media_type",
+  "invalid_token",
+  "rate_limited",
   "internal",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;

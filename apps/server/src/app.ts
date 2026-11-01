@@ -1,9 +1,13 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
+import fastifyCookie from "@fastify/cookie";
 import { existsSync } from "node:fs";
 import { HealthResponse } from "@hub/contracts";
 import type { HubConfig } from "./config.ts";
 import { openDatabase, pingDatabase, type DatabaseHandle } from "./lib/db/index.ts";
+import { registerGuards } from "./modules/auth/guard.ts";
+import { registerAuth } from "./modules/auth/routes.ts";
+import { pruneAuth } from "./modules/auth/store.ts";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -13,12 +17,18 @@ declare module "fastify" {
 
 export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   const app = Fastify({
+    trustProxy: false,
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
   });
 
   const database = openDatabase(config.dataDir);
   app.decorate("database", database);
   app.addHook("onClose", async () => database.close());
+  pruneAuth(database.db);
+
+  registerGuards(app, config);
+  await app.register(fastifyCookie);
+  await registerAuth(app, database);
 
   app.get("/api/health", async (_req, reply) => {
     const dbOk = pingDatabase(database.sqlite);

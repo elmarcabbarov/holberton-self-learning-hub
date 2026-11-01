@@ -1,14 +1,47 @@
 {
-  "app": { "name": "Self-Learning Hub", "skip": "Məzmuna keç" },
-  "nav": { "today": "Bu gün", "spaces": "Sahələr", "review": "Təkrar", "settings": "Ayarlar", "primary": "Əsas naviqasiya" },
+  "app": {
+    "name": "Self-Learning Hub",
+    "skip": "Məzmuna keç"
+  },
+  "nav": {
+    "today": "Bu gün",
+    "spaces": "Sahələr",
+    "review": "Təkrar",
+    "settings": "Ayarlar",
+    "primary": "Əsas naviqasiya"
+  },
   "today": {
     "title": "Bu gün",
     "emptyTitle": "Hələ təkrarlanacaq heç nə yoxdur",
     "emptyBody": "Bir sahə yarat və ilk qeydini əlavə et. Qeydlərindən yaratdığın kartlar vaxtı çatanda burada görünəcək.",
     "emptyCta": "Sahə yarat"
   },
-  "settings": { "title": "Ayarlar", "language": "İnterfeys dili", "theme": "Mövzu", "themeSystem": "Sistem", "themeDark": "Qaranlıq", "themeLight": "İşıqlı" },
-  "status": { "serverOk": "Server işləyir · v{version}", "degraded": "Server işləyir, amma verilənlər bazası cavab vermir", "serverDown": "Lokal serverə qoşulmaq olmur" },
+  "settings": {
+    "title": "Ayarlar",
+    "language": "İnterfeys dili",
+    "theme": "Mövzu",
+    "themeSystem": "Sistem",
+    "themeDark": "Qaranlıq",
+    "themeLight": "İşıqlı"
+  },
+  "status": {
+    "serverOk": "Server işləyir · v{version}",
+    "degraded": "Server işləyir, amma verilənlər bazası cavab vermir",
+    "serverDown": "Lokal serverə qoşulmaq olmur"
+  },
   "soon": "Hələ hazır deyil",
-  "errors": { "notFound": "Səhifə tapılmadı" }
+  "errors": {
+    "notFound": "Səhifə tapılmadı"
+  },
+  "auth": {
+    "title": "Hub-a daxil ol",
+    "body": "Hub-ı işə saldığın terminalda çap olunan birdəfəlik linki aç. Yeni link lazımdırsa, bu əmrlərdən birini işlət:",
+    "native": "pnpm ilə işləyirsə",
+    "docker": "Docker ilə işləyirsə",
+    "checking": "Sessiya yoxlanılır…",
+    "signingIn": "Daxil olunur…",
+    "invalid": "Bu link etibarsızdır, vaxtı keçib və ya artıq istifadə olunub.",
+    "rateLimited": "Çox cəhd edildi. Bir dəqiqə gözlə və yeni link yarat.",
+    "error": "Daxil olmaq alınmadı. Yeni link yarat."
+  }
 }

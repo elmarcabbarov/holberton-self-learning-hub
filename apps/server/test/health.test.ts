@@ -12,7 +12,7 @@ describe("GET /api/health", () => {
   it("returns a contract-valid payload with db ok", async () => {
     dir = mkdtempSync(join(tmpdir(), "hub-health-"));
     const app = await buildApp(loadConfig({ HUB_DATA: dir }));
-    const res = await app.inject({ method: "GET", url: "/api/health" });
+    const res = await app.inject({ method: "GET", url: "/api/health", headers: { host: "127.0.0.1:3000" } });
     expect(res.statusCode).toBe(200);
     const body = HealthResponse.parse(res.json());
     expect(body.mode).toBe("local");
@@ -26,7 +26,7 @@ describe("GET /api/health when the database fails", () => {
     const dir = mkdtempSync(join(tmpdir(), "hub-health-down-"));
     const app = await buildApp(loadConfig({ HUB_DATA: dir }));
     app.database.close();
-    const res = await app.inject({ method: "GET", url: "/api/health" });
+    const res = await app.inject({ method: "GET", url: "/api/health", headers: { host: "127.0.0.1:3000" } });
     expect(res.statusCode).toBe(503);
     const body = HealthResponse.parse(res.json());
     expect(body).toMatchObject({ status: "degraded", db: "error" });
