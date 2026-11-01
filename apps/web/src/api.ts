@@ -27,3 +27,29 @@ export async function redeemToken(token: string): Promise<BootstrapResult> {
   if (res.status === 429) return "rate_limited";
   return "error";
 }
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  constructor(status: number, code: string) {
+    super(`${status} ${code}`);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/** JSON request against the Hub API; parses the response with the given contract schema. */
+export async function apiJson<T>(path: string, schema: { parse(v: unknown): T }, init?: { method?: string; body?: unknown }): Promise<T> {
+  const res = await fetch(path, {
+    method: init?.method ?? "GET",
+    credentials: "same-origin",
+    headers: init?.body === undefined ? {} : { "content-type": "application/json" },
+    body: init?.body === undefined ? null : JSON.stringify(init.body),
+  });
+  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) {
+    const code = (data as { error?: { code?: string } } | null)?.error?.code ?? "internal";
+    throw new ApiError(res.status, code);
+  }
+  return schema.parse(data);
+}

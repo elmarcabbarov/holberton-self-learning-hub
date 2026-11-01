@@ -8,6 +8,7 @@ import { openDatabase, pingDatabase, type DatabaseHandle } from "./lib/db/index.
 import { registerGuards } from "./modules/auth/guard.ts";
 import { registerAuth } from "./modules/auth/routes.ts";
 import { pruneAuth } from "./modules/auth/store.ts";
+import { registerSpaceRoutes } from "./modules/spaces/routes.ts";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -29,6 +30,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   registerGuards(app, config);
   await app.register(fastifyCookie);
   await registerAuth(app, database);
+  await registerSpaceRoutes(app, database);
 
   app.get("/api/health", async (_req, reply) => {
     const dbOk = pingDatabase(database.sqlite);

@@ -31,7 +31,9 @@
   },
   "soon": "Hələ hazır deyil",
   "errors": {
-    "notFound": "Səhifə tapılmadı"
+    "notFound": "Səhifə tapılmadı",
+    "saveFailed": "Yadda saxlamaq alınmadı. Yenidən cəhd et.",
+    "loadFailed": "Bu səhifəni yükləmək alınmadı."
   },
   "auth": {
     "title": "Hub-a daxil ol",
@@ -43,5 +45,32 @@
     "invalid": "Bu link etibarsızdır, vaxtı keçib və ya artıq istifadə olunub.",
     "rateLimited": "Çox cəhd edildi. Bir dəqiqə gözlə və yeni link yarat.",
     "error": "Daxil olmaq alınmadı. Yeni link yarat."
+  },
+  "spaces": {
+    "title": "Sahələr",
+    "intro": "Sahə öyrəndiyin bir mövzunu saxlayır, məsələn Holberton project-i və ya track.",
+    "nameLabel": "Yeni sahə",
+    "namePlaceholder": "məs. Simple Shell",
+    "create": "Sahə yarat",
+    "empty": "Hələ sahə yoxdur. İlkini yuxarıda yarat.",
+    "topicCount": "{count, plural, one {# mövzu} other {# mövzu}}",
+    "archive": "Sahəni arxivlə"
+  },
+  "topics": {
+    "title": "Mövzular",
+    "intro": "Sahəni köməksiz izah edə bilmək istədiyin anlayışlara böl.",
+    "nameLabel": "Mövzunun adı",
+    "namePlaceholder": "məs. fork və execve",
+    "add": "Mövzu əlavə et",
+    "empty": "Hələ mövzu yoxdur.",
+    "rename": "{name} adını dəyiş",
+    "archive": "{name} mövzusunu arxivlə",
+    "archiveConfirm": "{name} mövzusunun arxivlənməsini təsdiqlə"
+  },
+  "common": {
+    "loading": "Yüklənir…",
+    "save": "Yadda saxla",
+    "cancel": "Ləğv et",
+    "confirmArchive": "Arxivləmək üçün yenidən klik et"
   }
 }
