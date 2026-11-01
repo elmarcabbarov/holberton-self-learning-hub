@@ -8,3 +8,6 @@ test-results/
 .env
 .env.*
 !.env.example
+.claude/settings.local.json
+.codex-review.md
+.codex-answer.md
