@@ -11,6 +11,7 @@ import { pruneAuth } from "./modules/auth/store.ts";
 import { registerSpaceRoutes } from "./modules/spaces/routes.ts";
 import { registerCardRoutes } from "./modules/cards/routes.ts";
 import { registerBackupRoutes } from "./modules/backup/routes.ts";
+import { registerImportRoutes } from "./modules/import/routes.ts";
 import { restorePending } from "./modules/backup/restore.ts";
 import { join } from "node:path";
 import { acquireLock } from "./lib/lockfile.ts";
@@ -59,6 +60,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerAuth(app, database);
   await registerSpaceRoutes(app, database);
   await registerCardRoutes(app, database);
+  await registerImportRoutes(app, database, vault);
   await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
   await registerVaultRoutes(app, vault, database);
 

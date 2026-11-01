@@ -8,6 +8,7 @@ import { SpaceDetailPage } from "./routes/SpaceDetail.tsx";
 import { Notes } from "./routes/Notes.tsx";
 import { NoteEditorPage } from "./routes/NoteEditor.tsx";
 import { Review } from "./routes/Review.tsx";
+import { ImportProject } from "./routes/ImportProject.tsx";
 import { AuthGate } from "./components/AuthGate.tsx";
 
 const root = createRootRoute({ component: AuthGate, notFoundComponent: () => <Placeholder titleKey="errors.notFound" /> });
@@ -17,6 +18,7 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: Today }),
   createRoute({ getParentRoute: () => root, path: "/spaces", component: Spaces }),
   createRoute({ getParentRoute: () => root, path: "/spaces/$spaceId", component: SpaceDetailPage }),
+  createRoute({ getParentRoute: () => root, path: "/import", component: ImportProject }),
   createRoute({ getParentRoute: () => root, path: "/notes", component: Notes }),
   createRoute({ getParentRoute: () => root, path: "/notes/$noteId", component: NoteEditorPage }),
   createRoute({
