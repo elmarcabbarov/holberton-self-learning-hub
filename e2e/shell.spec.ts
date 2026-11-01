@@ -102,3 +102,15 @@ test("a failed save shows an accessible error", async ({ page }) => {
   await page.getByRole("button", { name: "Add topic" }).click();
   await expect(page.getByRole("alert")).toHaveText("Could not save. Try again.");
 });
+
+test("the app runs without Content Security Policy violations", async ({ page }) => {
+  const violations: string[] = [];
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (e) => console.log(`CSPV ${e.violatedDirective} ${e.blockedURI}`));
+  });
+  page.on("console", (m) => { if (m.text().startsWith("CSPV")) violations.push(m.text()); });
+  await page.goto("/");
+  await page.goto("/notes");
+  await page.goto("/review");
+  expect(violations).toEqual([]);
+});
