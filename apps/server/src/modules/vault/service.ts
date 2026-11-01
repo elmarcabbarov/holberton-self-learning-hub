@@ -130,8 +130,8 @@ export class Vault {
         if (prior) tx.update(notes).set({ ...row, createdAt: prior.createdAt }).where(eq(notes.id, noteId)).run();
         else tx.insert(notes).values(row).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+        this.index(noteId, rel, file.bytes); // same transaction: metadata and index never diverge
       });
-      this.index(noteId, rel, file.bytes);
       this.resolve();
       return { kind: "created", note: this.get(noteId) ?? row };
     });
@@ -172,8 +172,8 @@ export class Vault {
       this.db.transaction((tx) => {
         tx.update(notes).set(row).where(eq(notes.id, id)).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+        this.index(id, note.path, file.bytes);
       });
-      this.index(id, note.path, file.bytes);
       this.resolve();
       return { kind: "saved", note: this.get(id) ?? row };
     });
@@ -200,8 +200,10 @@ export class Vault {
         const row = byPath.get(path);
         if (!row) { newPaths.push(path); continue; }
         if (row.contentSha256 !== f.version.sha256 || row.size !== f.version.size || row.mtimeMs !== Math.round(f.version.mtimeMs) || row.missingSince) {
-          this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
-          this.index(row.id, path, f.bytes);
+          this.db.transaction(() => {
+            this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
+            this.index(row.id, path, f.bytes);
+          });
           report.updated++;
         }
       }
@@ -217,8 +219,10 @@ export class Vault {
         if (sameHashNew.length === 1 && sameHashAbsent.length === 1 && !renamedNew.has(sameHashNew[0]!)) {
           const path = sameHashNew[0]!;
           const f = files.get(path)!;
-          this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
-          this.index(row.id, path, f.bytes);
+          this.db.transaction(() => {
+            this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
+            this.index(row.id, path, f.bytes);
+          });
           renamedNew.add(path);
           renamedRows.add(row.id);
           report.renamed++;
@@ -234,8 +238,10 @@ export class Vault {
         if (renamedNew.has(path)) continue;
         const f = files.get(path)!;
         const id = randomUUID();
-        this.db.insert(notes).values(this.rowFromFile(id, path, f.bytes, f.version)).run();
-        this.index(id, path, f.bytes);
+        this.db.transaction(() => {
+          this.db.insert(notes).values(this.rowFromFile(id, path, f.bytes, f.version)).run();
+          this.index(id, path, f.bytes);
+        });
         report.added++;
       }
       if (report.added + report.updated + report.renamed + report.missing > 0) this.resolve();

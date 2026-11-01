@@ -62,3 +62,24 @@ describe("searchFold", () => {
     expect(searchFold("INSTALL")).toBe("install");
   });
 });
+
+describe("Codex review regressions (parser)", () => {
+  it("resolves reference-style links and images through definitions", () => {
+    const p = parseNote("[label][ref] and ![pic][img]\n\n[ref]: Note.md#Part\n[img]: assets/a.png", "f");
+    expect(p.links).toEqual([
+      { kind: "md", target: "Note.md", anchor: "Part" },
+      { kind: "md-embed", target: "assets/a.png", anchor: null },
+    ]);
+  });
+  it("finds wiki links whose label contains formatting, but not inside code", () => {
+    const p = parseNote("[[Note|**bold** label]] `[[no]]`\n\n```\n[[no2]]\n```", "f");
+    expect(p.links).toEqual([{ kind: "wiki", target: "Note", anchor: null }]);
+  });
+  it("keeps %23 in file names instead of treating it as an anchor", () => {
+    expect(parseNote("[x](part%23one.md#sec)", "f").links).toEqual([{ kind: "md", target: "part#one.md", anchor: "sec" }]);
+  });
+  it("reads formatted H1 text recursively", () => {
+    expect(parseNote("# **Important**", "f").title).toBe("Important");
+    expect(parseNote("# A **bold** title", "f").title).toBe("A bold title");
+  });
+});

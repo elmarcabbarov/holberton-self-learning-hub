@@ -96,3 +96,27 @@ describe("tags and titles", () => {
     expect(vault.get(id("t.md"))!.title).toBe("Siqnallar");
   });
 });
+
+describe("Codex review regressions (index)", () => {
+  it("resolves embeds of dotted note names before treating them as attachments", async () => {
+    write("Node.js.md", "x"); write("i.md", "![[Node.js]] ![[logo.png]]");
+    await vault.reconcile();
+    expect(noteMeta(h.db, id("i.md")).links.map((l) => l.state)).toEqual(["resolved", "file"]);
+  });
+  it("resolves Markdown image embeds relative to the note", async () => {
+    write("Shell/Note.md", "a"); write("Other/Note.md", "b"); write("Shell/index.md", "![](Note.md)");
+    await vault.reconcile();
+    const link = noteMeta(h.db, id("Shell/index.md")).links[0]!;
+    expect(link).toMatchObject({ kind: "md-embed", state: "resolved", targetId: id("Shell/Note.md") });
+  });
+  it("rolls back metadata when indexing fails, so the next reconcile re-indexes", async () => {
+    write("atomic.md", "old words"); await vault.reconcile();
+    write("atomic.md", "new words");
+    const failing = { prepare: (sql: string) => { if (sql.startsWith("INSERT INTO notes_fts")) throw new Error("boom"); return h.sqlite.prepare(sql); } };
+    const broken = new Vault(h.db, root, failing);
+    await expect(broken.reconcile()).rejects.toThrow("boom");
+    await vault.reconcile();
+    expect(searchNotes(h.sqlite, "new")).toHaveLength(1);
+    expect(searchNotes(h.sqlite, "old")).toHaveLength(0);
+  });
+});

@@ -64,10 +64,9 @@ export function resolveLinks(db: Db): void {
       let state: string; let target: string | null = null;
       const raw = l.target.replace(/^\.\//, "");
       if (raw === "") { state = "self"; target = l.fromNoteId; }
-      else if (l.kind === "embed" && !/\.md$/i.test(raw) && /\.[a-z0-9]{1,5}$/i.test(raw)) { state = "file"; }
       else {
         let candidates: string[];
-        if (l.kind === "md") {
+        if (l.kind === "md" || l.kind === "md-embed") {
           const fromDir = posix.dirname(pathOf.get(l.fromNoteId) ?? "");
           candidates = byPath.get(foldKey(stripMd(posix.normalize(posix.join(fromDir, raw))))) ?? [];
         } else if (raw.includes("/")) {
@@ -76,7 +75,9 @@ export function resolveLinks(db: Db): void {
           candidates = [...new Set(byName.get(foldKey(stripMd(raw))) ?? [])];
         }
         if (candidates.length === 1) { state = "resolved"; target = candidates[0]!; }
-        else state = candidates.length === 0 ? "unresolved" : "ambiguous";
+        else if (candidates.length > 1) state = "ambiguous";
+        // An unmatched embed with a non-Markdown extension is an attachment, not a missing note.
+        else state = (l.kind === "embed" || l.kind === "md-embed") && /\.[a-z0-9]{1,5}$/i.test(raw) && !/\.md$/i.test(raw) ? "file" : "unresolved";
       }
       if (state !== l.state || target !== l.targetNoteId) {
         tx.update(noteLinks).set({ state, targetNoteId: target }).where(eq(noteLinks.id, l.id)).run();
