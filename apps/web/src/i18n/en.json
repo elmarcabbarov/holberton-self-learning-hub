@@ -91,7 +91,8 @@
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
-    "confirmArchive": "Click again to archive"
+    "confirmArchive": "Click again to archive",
+    "retry": "Try again"
   },
   "notes": {
     "exists": "A note with this path already exists.",
@@ -239,5 +240,15 @@
     "taskPlaceholder": "Task {n}",
     "noteIntro": "Imported from the Holberton intranet on {date}. Solutions are yours to write — follow The Framework.",
     "noteSkipped": "The project note could not be created with this name. You can create it yourself on the Notes page."
+  },
+  "archive": {
+    "showSpaces": "Show archived spaces",
+    "hideSpaces": "Hide archived spaces",
+    "spacesLabel": "Archived spaces",
+    "noneSpaces": "No archived spaces.",
+    "restore": "Restore",
+    "restoreNamed": "Restore {name}",
+    "topicsSummary": "{count, plural, one {# archived topic} other {# archived topics}}",
+    "topicsLabel": "Archived topics"
   }
 }

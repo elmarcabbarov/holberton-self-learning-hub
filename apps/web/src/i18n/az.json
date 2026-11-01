@@ -91,7 +91,8 @@
     "loading": "Yüklənir…",
     "save": "Yadda saxla",
     "cancel": "Ləğv et",
-    "confirmArchive": "Arxivləmək üçün yenidən klik et"
+    "confirmArchive": "Arxivləmək üçün yenidən klik et",
+    "retry": "Yenidən cəhd et"
   },
   "notes": {
     "exists": "Bu yolda artıq qeyd var.",
@@ -239,5 +240,15 @@
     "taskPlaceholder": "Task {n}",
     "noteIntro": "{date} tarixində Holberton intranet-dən import olunub. Həlləri özün yazırsan — The Framework-ə əməl et.",
     "noteSkipped": "Project qeydi bu adla yaradıla bilmədi. Onu Qeydlər səhifəsində özün yarada bilərsən."
+  },
+  "archive": {
+    "showSpaces": "Arxivlənmiş sahələri göstər",
+    "hideSpaces": "Arxivlənmiş sahələri gizlət",
+    "spacesLabel": "Arxivlənmiş sahələr",
+    "noneSpaces": "Arxivlənmiş sahə yoxdur.",
+    "restore": "Bərpa et",
+    "restoreNamed": "{name} bərpa et",
+    "topicsSummary": "{count, plural, one {# arxivlənmiş mövzu} other {# arxivlənmiş mövzu}}",
+    "topicsLabel": "Arxivlənmiş mövzular"
   }
 }

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useCreateSpace, useSpaces } from "../features/spaces.ts";
+import { useArchivedSpaces, useCreateSpace, useRestoreSpace, useSpaces } from "../features/spaces.ts";
 import { Button, Card, PageTitle, TextInput } from "../components/ui.tsx";
 
 export function Spaces() {
@@ -9,6 +9,9 @@ export function Spaces() {
   const spaces = useSpaces();
   const create = useCreateSpace();
   const [name, setName] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const archived = useArchivedSpaces(showArchived);
+  const restore = useRestoreSpace();
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,6 +49,28 @@ export function Spaces() {
             ))}
           </ul>
         ) : null}
+      </div>
+      <div className="mt-10">
+        <Button variant="ghost" aria-expanded={showArchived} onClick={() => setShowArchived((v) => !v)}>
+          {showArchived ? t("archive.hideSpaces") : t("archive.showSpaces")}
+        </Button>
+        {showArchived ? (
+          archived.data && archived.data.spaces.length > 0 ? (
+            <ul className="mt-3 divide-y divide-line rounded-[var(--radius-card)] border border-line bg-surface" aria-label={t("archive.spacesLabel")}>
+              {archived.data.spaces.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 px-5 py-3">
+                  <span className="min-w-0 flex-1 truncate text-muted">{s.name}</span>
+                  <Button onClick={() => restore.mutate(s.id)} disabled={restore.isPending} aria-label={t("archive.restoreNamed", { name: s.name })}>{t("archive.restore")}</Button>
+                </li>
+              ))}
+            </ul>
+          ) : archived.isSuccess ? <p className="mt-3 text-[14px] text-muted">{t("archive.noneSpaces")}</p>
+            : archived.isError ? (
+              <p role="alert" className="mt-3 flex items-center gap-3 text-[14px]">{t("errors.loadFailed")}
+                <Button variant="ghost" onClick={() => void archived.refetch()}>{t("common.retry")}</Button></p>
+            ) : null
+        ) : null}
+        {restore.isError ? <p role="alert" className="mt-3 text-[14px]">{t("errors.saveFailed")}</p> : null}
       </div>
     </section>
   );

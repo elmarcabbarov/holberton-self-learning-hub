@@ -28,7 +28,7 @@ export const Space = z.object({
 });
 export type Space = z.infer<typeof Space>;
 
-export const SpaceDetail = Space.extend({ topics: z.array(Topic) });
+export const SpaceDetail = Space.extend({ topics: z.array(Topic), archivedTopics: z.array(Topic) });
 export type SpaceDetail = z.infer<typeof SpaceDetail>;
 
 export const SpaceList = z.object({ spaces: z.array(Space) });

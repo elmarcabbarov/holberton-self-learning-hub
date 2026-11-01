@@ -38,6 +38,8 @@ describe("spaces", () => {
     expect(archived.archivedAt).not.toBeNull();
     const list = SpaceList.parse((await t.req({ method: "GET", url: "/api/spaces" })).json());
     expect(list.spaces).toEqual([]);
+    const archivedList = SpaceList.parse((await t.req({ method: "GET", url: "/api/spaces?archived=1" })).json());
+    expect(archivedList.spaces.map((x) => x.id)).toEqual([s.id]);
     const restored = Space.parse((await t.req({ method: "PATCH", url: `/api/spaces/${s.id}`, payload: { archived: false } })).json());
     expect(restored.archivedAt).toBeNull();
   });
@@ -72,6 +74,10 @@ describe("topics", () => {
     detail = SpaceDetail.parse((await t.req({ method: "GET", url: `/api/spaces/${s.id}` })).json());
     expect(detail.topics.map((x) => x.name)).toEqual(["execve", "waitpid"]);
     expect(detail.topicCount).toBe(2);
+    expect(detail.archivedTopics.map((x) => x.name)).toEqual(["fork"]);
+    await t.req({ method: "PATCH", url: `/api/topics/${first.id}`, payload: { archived: false } });
+    detail = SpaceDetail.parse((await t.req({ method: "GET", url: `/api/spaces/${s.id}` })).json());
+    expect(detail.topics.map((x) => x.name)).toEqual(["fork", "execve", "waitpid"]);
   });
 
   it("does not add topics to an archived space", async () => {

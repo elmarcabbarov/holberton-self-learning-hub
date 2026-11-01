@@ -50,6 +50,18 @@ function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
   );
 }
 
+function ArchivedTopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
+  const { t } = useTranslation();
+  const update = useUpdateTopic(spaceId);
+  return (
+    <li className="flex flex-wrap items-center gap-3 py-2">
+      <span className="flex-1 text-muted">{topic.name}</span>
+      <Button onClick={() => update.mutate({ id: topic.id, archived: false })} disabled={update.isPending} aria-label={t("archive.restoreNamed", { name: topic.name })}>{t("archive.restore")}</Button>
+      {update.isError ? <p role="alert" className="w-full text-[13px]">{t("errors.saveFailed")}</p> : null}
+    </li>
+  );
+}
+
 export function SpaceDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -93,6 +105,15 @@ export function SpaceDetailPage() {
           ? <p className="mt-6 text-muted">{t("topics.empty")}</p>
           : <ul className="mt-6 divide-y divide-line" aria-label={t("topics.listLabel")}>{space.data.topics.map((tp) => <TopicRow key={tp.id} topic={tp} spaceId={spaceId} />)}</ul>}
       </Card>
+
+      {space.data.archivedTopics.length > 0 ? (
+        <details className="mt-4 rounded-[var(--radius-card)] border border-line bg-surface px-6 py-4">
+          <summary className="cursor-pointer text-[14px] text-muted">{t("archive.topicsSummary", { count: space.data.archivedTopics.length })}</summary>
+          <ul className="mt-3 divide-y divide-line" aria-label={t("archive.topicsLabel")}>
+            {space.data.archivedTopics.map((tp) => <ArchivedTopicRow key={tp.id} topic={tp} spaceId={spaceId} />)}
+          </ul>
+        </details>
+      ) : null}
 
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
