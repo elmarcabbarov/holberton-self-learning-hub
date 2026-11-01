@@ -12,4 +12,4 @@ codex exec -m gpt-6.1-sol -c model_reasoning_effort=high -s workspace-write \
 
 $body
 
-Follow AGENTS.md and docs/AGENT_WORKFLOW.md steps 5-7. Stay inside the issue scope. Run pnpm check (and pnpm e2e if UI/HTTP changed) until green. Commit with message 'HSLH: <summary> (#$n)'. Do not push."
+Follow AGENTS.md and docs/AGENT_WORKFLOW.md steps 5-7. Stay inside the issue scope. Run pnpm check (and pnpm e2e if UI/HTTP changed) until green. Commit with message 'HSLH: <summary> (#$n)'. Do not push."  </dev/null
