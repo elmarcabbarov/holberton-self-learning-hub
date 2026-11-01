@@ -8,6 +8,10 @@ import { foldKey, isIgnoredDir, PathError, validateNotePath } from "../../lib/fs
 import { MAX_NOTE_BYTES, publishNew, publishReplace, readStable, resolveInVault, sha256, writeTemp, type FileVersion } from "../../lib/fs-safe/vault-fs.ts";
 import { decodeNote, encodeNote, type Eol } from "../../lib/fs-safe/text.ts";
 import { SerialQueue } from "./queue.ts";
+import { indexNote, resolveLinks, unindexNote } from "./indexer.ts";
+import { notesFtsMap } from "../../lib/db/schema.ts";
+
+type Sqlite = Parameters<typeof indexNote>[1];
 
 type NoteRow = typeof notes.$inferSelect;
 
@@ -34,15 +38,44 @@ export class Vault {
   private readonly queue = new SerialQueue();
   lastReconcile: ReconcileReport | null = null;
 
-  constructor(db: Db, root: string) {
+  private readonly sqlite: Sqlite | null;
+
+  /** `sqlite` enables the derived index (links, tags, FTS); without it only file metadata is kept. */
+  constructor(db: Db, root: string, sqlite: Sqlite | null = null) {
     this.db = db;
     this.root = root;
+    this.sqlite = sqlite;
   }
 
   async init(): Promise<void> {
     await mkdir(this.root, { recursive: true });
     await this.queue.run(() => this.recover());
     await this.reconcile();
+    await this.queue.run(() => this.ensureIndexed());
+  }
+
+  private index(noteId: string, path: string, bytes: Buffer): void {
+    if (this.sqlite) indexNote(this.db, this.sqlite, noteId, path, decodeNote(bytes).text);
+  }
+
+  private resolve(): void {
+    if (this.sqlite) resolveLinks(this.db);
+  }
+
+  /** Indexes present notes that have no index yet (e.g. after upgrading from a version without one). */
+  private async ensureIndexed(): Promise<void> {
+    if (!this.sqlite) return;
+    const indexed = new Set(this.db.select({ id: notesFtsMap.noteId }).from(notesFtsMap).all().map((r) => r.id));
+    let changed = false;
+    for (const n of this.list()) {
+      if (n.missingSince || indexed.has(n.id)) continue;
+      try {
+        const file = await readStable(await resolveInVault(this.root, n.path));
+        this.index(n.id, n.path, file.bytes);
+        changed = true;
+      } catch { /* unreadable: reconcile reports it */ }
+    }
+    if (changed) this.resolve();
   }
 
   idle(): Promise<void> { return this.queue.idle(); }
@@ -98,6 +131,8 @@ export class Vault {
         else tx.insert(notes).values(row).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
       });
+      this.index(noteId, rel, file.bytes);
+      this.resolve();
       return { kind: "created", note: this.get(noteId) ?? row };
     });
   }
@@ -138,6 +173,8 @@ export class Vault {
         tx.update(notes).set(row).where(eq(notes.id, id)).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
       });
+      this.index(id, note.path, file.bytes);
+      this.resolve();
       return { kind: "saved", note: this.get(id) ?? row };
     });
   }
@@ -164,6 +201,7 @@ export class Vault {
         if (!row) { newPaths.push(path); continue; }
         if (row.contentSha256 !== f.version.sha256 || row.size !== f.version.size || row.mtimeMs !== Math.round(f.version.mtimeMs) || row.missingSince) {
           this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
+          this.index(row.id, path, f.bytes);
           report.updated++;
         }
       }
@@ -180,6 +218,7 @@ export class Vault {
           const path = sameHashNew[0]!;
           const f = files.get(path)!;
           this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
+          this.index(row.id, path, f.bytes);
           renamedNew.add(path);
           renamedRows.add(row.id);
           report.renamed++;
@@ -188,14 +227,18 @@ export class Vault {
       for (const row of gone) {
         if (renamedRows.has(row.id)) continue;
         this.db.update(notes).set({ missingSince: iso(), updatedAt: iso() }).where(eq(notes.id, row.id)).run();
+        if (this.sqlite) unindexNote(this.db, this.sqlite, row.id);
         report.missing++;
       }
       for (const path of newPaths) {
         if (renamedNew.has(path)) continue;
         const f = files.get(path)!;
-        this.db.insert(notes).values(this.rowFromFile(randomUUID(), path, f.bytes, f.version)).run();
+        const id = randomUUID();
+        this.db.insert(notes).values(this.rowFromFile(id, path, f.bytes, f.version)).run();
+        this.index(id, path, f.bytes);
         report.added++;
       }
+      if (report.added + report.updated + report.renamed + report.missing > 0) this.resolve();
       this.lastReconcile = report;
       return report;
     });

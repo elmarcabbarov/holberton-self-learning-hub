@@ -72,3 +72,30 @@ export const fileOps = sqliteTable("file_ops", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const noteLinks = sqliteTable("note_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  fromNoteId: text("from_note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(), // wiki | embed | md
+  target: text("target").notNull(),
+  anchor: text("anchor"),
+  targetNoteId: text("target_note_id"),
+  state: text("state").notNull(), // resolved | unresolved | ambiguous | self
+}, (t) => [index("note_links_from_idx").on(t.fromNoteId), index("note_links_target_idx").on(t.targetNoteId)]);
+
+export const noteTags = sqliteTable("note_tags", {
+  noteId: text("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  tag: text("tag").notNull(),
+}, (t) => [index("note_tags_note_idx").on(t.noteId), index("note_tags_tag_idx").on(t.tag)]);
+
+export const noteAliases = sqliteTable("note_aliases", {
+  noteId: text("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  alias: text("alias").notNull(),
+  aliasKey: text("alias_key").notNull(),
+}, (t) => [index("note_aliases_key_idx").on(t.aliasKey)]);
+
+/** Stable integer rowids for the FTS table (D-033). */
+export const notesFtsMap = sqliteTable("notes_fts_map", {
+  rowid: integer("rowid").primaryKey({ autoIncrement: true }),
+  noteId: text("note_id").notNull().unique().references(() => notes.id, { onDelete: "cascade" }),
+});
