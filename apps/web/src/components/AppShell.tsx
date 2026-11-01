@@ -1,7 +1,7 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { CalendarCheck, FolderTree, Layers, Settings } from "lucide-react";
+import { CalendarCheck, FileText, FolderTree, Layers, Settings } from "lucide-react";
 import type { ComponentType } from "react";
 import { fetchHealth } from "../api.ts";
 
@@ -10,6 +10,7 @@ type NavItem = { to: string; key: string; icon: ComponentType<{ size?: number; "
 const NAV: NavItem[] = [
   { to: "/", key: "nav.today", icon: CalendarCheck },
   { to: "/spaces", key: "nav.spaces", icon: FolderTree },
+  { to: "/notes", key: "nav.notes", icon: FileText },
   { to: "/review", key: "nav.review", icon: Layers },
 ];
 

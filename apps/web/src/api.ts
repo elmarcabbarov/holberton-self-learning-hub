@@ -31,10 +31,15 @@ export async function redeemToken(token: string): Promise<BootstrapResult> {
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
-  constructor(status: number, code: string) {
+  readonly messageKey: string;
+  /** Raw `error.details` from the server (e.g. the current version on a 409); validate before use. */
+  readonly details: unknown;
+  constructor(status: number, code: string, messageKey = "errors.internal", details: unknown = undefined) {
     super(`${status} ${code}`);
     this.status = status;
     this.code = code;
+    this.messageKey = messageKey;
+    this.details = details;
   }
 }
 
@@ -48,8 +53,8 @@ export async function apiJson<T>(path: string, schema: { parse(v: unknown): T },
   });
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    const code = (data as { error?: { code?: string } } | null)?.error?.code ?? "internal";
-    throw new ApiError(res.status, code);
+    const e = (data as { error?: { code?: string; messageKey?: string; details?: unknown } } | null)?.error;
+    throw new ApiError(res.status, e?.code ?? "internal", e?.messageKey ?? "errors.internal", e?.details);
   }
   return schema.parse(data);
 }

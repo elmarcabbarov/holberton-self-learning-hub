@@ -8,7 +8,8 @@
     "spaces": "Spaces",
     "review": "Review",
     "settings": "Settings",
-    "primary": "Primary"
+    "primary": "Primary",
+    "notes": "Notes"
   },
   "today": {
     "title": "Today",
@@ -88,5 +89,47 @@
     "invalidPath": "This file name or folder is not allowed.",
     "conflict": "This note changed on disk since you opened it.",
     "readOnly": "Hub cannot safely edit this file (unsupported encoding or mixed line endings)."
+  },
+  "notesPage": {
+    "title": "Notes",
+    "intro": "Your Markdown notes. They stay plain .md files you can open in Obsidian or any editor.",
+    "newLabel": "New note",
+    "newPlaceholder": "e.g. Shell/execve",
+    "create": "Create note",
+    "search": "Search notes",
+    "searchPlaceholder": "Search your notes…",
+    "results": "Search results",
+    "noResults": "No notes match.",
+    "empty": "No notes yet. Create one above or put .md files in your vault folder.",
+    "loadMore": "Load more"
+  },
+  "editor": {
+    "label": "Edit {title}",
+    "placeholder": "Start writing…",
+    "hint": "Ctrl+S / ⌘S saves. Links like [[Note]] and #tags are picked up automatically.",
+    "sidebar": "Note details",
+    "tags": "Tags",
+    "links": "Links",
+    "backlinks": "Backlinks",
+    "none": "None yet",
+    "conflict": "This note was changed outside the Hub (for example in Obsidian) after you opened it.",
+    "keepCopy": "Keep mine as a copy",
+    "reload": "Discard mine and reload",
+    "status": {
+      "clean": "No changes",
+      "dirty": "Unsaved changes",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "conflict": "Not saved: conflict",
+      "error": "Not saved"
+    },
+    "linkState": {
+      "unresolved": "not found",
+      "ambiguous": "several matches",
+      "file": "attachment",
+      "resolved": "found",
+      "self": "this note"
+    },
+    "leaveConfirm": "You have unsaved changes. Leave anyway?"
   }
 }

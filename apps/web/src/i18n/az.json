@@ -8,7 +8,8 @@
     "spaces": "Sahələr",
     "review": "Təkrar",
     "settings": "Ayarlar",
-    "primary": "Əsas naviqasiya"
+    "primary": "Əsas naviqasiya",
+    "notes": "Qeydlər"
   },
   "today": {
     "title": "Bu gün",
@@ -88,5 +89,47 @@
     "invalidPath": "Bu fayl adı və ya qovluq icazəli deyil.",
     "conflict": "Bu qeyd açdığından sonra diskdə dəyişib.",
     "readOnly": "Hub bu faylı təhlükəsiz redaktə edə bilmir (dəstəklənməyən encoding və ya qarışıq sətir sonları)."
+  },
+  "notesPage": {
+    "title": "Qeydlər",
+    "intro": "Markdown qeydlərin. Onlar adi .md fayllar olaraq qalır, Obsidian-da və ya istənilən editorda aça bilərsən.",
+    "newLabel": "Yeni qeyd",
+    "newPlaceholder": "məs. Shell/execve",
+    "create": "Qeyd yarat",
+    "search": "Qeydlərdə axtar",
+    "searchPlaceholder": "Qeydlərində axtar…",
+    "results": "Axtarış nəticələri",
+    "noResults": "Uyğun qeyd yoxdur.",
+    "empty": "Hələ qeyd yoxdur. Yuxarıda yarat və ya vault qovluğuna .md fayllar qoy.",
+    "loadMore": "Daha çox yüklə"
+  },
+  "editor": {
+    "label": "{title} qeydini redaktə et",
+    "placeholder": "Yazmağa başla…",
+    "hint": "Ctrl+S / ⌘S yadda saxlayır. [[Qeyd]] kimi linklər və #taglər avtomatik tanınır.",
+    "sidebar": "Qeyd haqqında",
+    "tags": "Taglər",
+    "links": "Linklər",
+    "backlinks": "Geri linklər",
+    "none": "Hələ yoxdur",
+    "conflict": "Bu qeyd sən açandan sonra Hub-dan kənarda (məs. Obsidian-da) dəyişdirilib.",
+    "keepCopy": "Mənimkini nüsxə kimi saxla",
+    "reload": "Mənimkini at və yenilə",
+    "status": {
+      "clean": "Dəyişiklik yoxdur",
+      "dirty": "Yadda saxlanmamış dəyişikliklər",
+      "saving": "Saxlanılır…",
+      "saved": "Yadda saxlandı",
+      "conflict": "Saxlanmadı: konflikt",
+      "error": "Saxlanmadı"
+    },
+    "linkState": {
+      "unresolved": "tapılmadı",
+      "ambiguous": "bir neçə uyğunluq",
+      "file": "əlavə fayl",
+      "resolved": "tapıldı",
+      "self": "bu qeyd"
+    },
+    "leaveConfirm": "Yadda saxlanmamış dəyişikliklər var. Yenə də çıxırsan?"
   }
 }
