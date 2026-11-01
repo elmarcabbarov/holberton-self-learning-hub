@@ -2,6 +2,11 @@
 
 You are working on the Holberton Self-Learning Hub. Read `docs/DECISIONS.md` first: it overrides every other document. Product and architecture context is in `docs/` (start at `docs/README.md`).
 
+## Workflow
+Follow `docs/AGENT_WORKFLOW.md` for every issue (research → tests → code → Codex review → PR → merge → next). Skills: `.agents/skills/hub-issue`, `.agents/skills/hub-review` (also linked under `.claude/skills`). Claude commands: `/next-issue`, `/review`, `/check`. Codex: `scripts/codex-ask.sh`, `scripts/codex-review.sh`, `scripts/codex-implement.sh`; project config in `.codex/config.toml`.
+
+Module rules: `apps/server/AGENTS.md`, `apps/web/AGENTS.md`.
+
 ## Commands
 - Install: `pnpm install`
 - All checks: `pnpm check` (eslint, tsc, vitest). Run before every commit.
