@@ -73,20 +73,20 @@ test("create a space, add topics, rename and archive one", async ({ page }) => {
   for (const topic of ["fork", "execve", "waitpid"]) {
     await page.getByLabel("Topic name").fill(topic);
     await page.getByRole("button", { name: "Add topic" }).click();
-    await expect(page.getByText(topic, { exact: true })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Topics in this space" }).getByText(topic, { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: "Rename execve" }).click();
   await page.getByRole("textbox", { name: "Topic name" }).last().fill("execve(2)");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("execve(2)", { exact: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Topics in this space" }).getByText("execve(2)", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Archive fork" }).click();
-  await expect(page.getByText("fork", { exact: true })).toBeVisible(); // first click only arms
+  await expect(page.getByRole("list", { name: "Topics in this space" }).getByText("fork", { exact: true })).toBeVisible(); // first click only arms
   await page.getByRole("button", { name: "Confirm archiving fork" }).click();
-  await expect(page.getByText("fork", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Topics in this space" }).getByText("fork", { exact: true })).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByText("execve(2)", { exact: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Topics in this space" }).getByText("execve(2)", { exact: true })).toBeVisible();
   await page.goto("/spaces");
   await expect(page.getByRole("link", { name: new RegExp(name) })).toContainText("2 topics");
 });

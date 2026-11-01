@@ -75,7 +75,8 @@
     "empty": "Hələ mövzu yoxdur.",
     "rename": "{name} adını dəyiş",
     "archive": "{name} mövzusunu arxivlə",
-    "archiveConfirm": "{name} mövzusunun arxivlənməsini təsdiqlə"
+    "archiveConfirm": "{name} mövzusunun arxivlənməsini təsdiqlə",
+    "listLabel": "Bu sahədəki mövzular"
   },
   "common": {
     "loading": "Yüklənir…",
@@ -131,5 +132,59 @@
       "self": "bu qeyd"
     },
     "leaveConfirm": "Yadda saxlanmamış dəyişikliklər var. Yenə də çıxırsan?"
+  },
+  "cards": {
+    "title": "Kartlar",
+    "intro": "Ön üzə sual, arxa üzə cavab yaz. Vaxtı çatanda təkrar et.",
+    "startReview": "Təkrara başla",
+    "formLabel": "Yeni kart",
+    "space": "Sahə",
+    "noSpace": "Sahəsiz",
+    "topic": "Mövzu",
+    "noTopic": "Mövzusuz",
+    "front": "Ön üz (sual)",
+    "back": "Arxa üz (cavab)",
+    "frontPlaceholder": "məs. fork() uşaq prosesdə nə qaytarır?",
+    "backPlaceholder": "məs. 0",
+    "create": "Kart əlavə et",
+    "created": "Kart əlavə olundu",
+    "listLabel": "Bu sahədəki kartlar",
+    "makeCard": "Kart yarat",
+    "fromSelection": "Seçilmiş mətndən kart yarat",
+    "badTopic": "Bu mövzu mövcud deyil.",
+    "badNote": "Bu qeyd mövcud deyil.",
+    "inactive": "Bu kart dayandırılıb və ya arxivlənib.",
+    "state": {
+      "new": "yeni",
+      "learning": "öyrənilir",
+      "review": "təkrar",
+      "relearning": "yenidən öyrənilir"
+    }
+  },
+  "review": {
+    "title": "Təkrar",
+    "progress": "{done} / {total}",
+    "show": "Cavabı göstər",
+    "rateLabel": "Nə qədər yaxşı xatırladın?",
+    "rating": {
+      "again": "Yenidən",
+      "hard": "Çətin",
+      "good": "Yaxşı",
+      "easy": "Asan"
+    },
+    "keys": "Space cavabı göstərir · 1–4 qiymət verir",
+    "emptyTitle": "Hazırda təkrar ediləcək kart yoxdur",
+    "emptyBody": "Yeni kartlar dərhal təkrara düşür. Qeydlərindən və ya sahədə kart yarat.",
+    "finishedTitle": "Hələlik bitdi",
+    "finishedBody": "{count, plural, one {# kart təkrar etdin.} other {# kart təkrar etdin.}} Yeniləri vaxtı çatanda gələcək.",
+    "addCards": "Sahələrə keç",
+    "unit": {
+      "lessMin": "<1 dəq",
+      "min": "{n} dəq",
+      "hour": "{n} saat",
+      "day": "{n} gün",
+      "month": "{n} ay",
+      "year": "{n} il"
+    }
   }
 }

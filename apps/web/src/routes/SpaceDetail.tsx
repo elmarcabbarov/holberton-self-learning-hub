@@ -5,6 +5,8 @@ import { ArrowLeft, Archive, Pencil, Check, X } from "lucide-react";
 import type { Topic } from "@hub/contracts";
 import { useCreateTopic, useSpace, useUpdateSpace, useUpdateTopic } from "../features/spaces.ts";
 import { Button, Card, ConfirmButton, PageTitle, TextInput } from "../components/ui.tsx";
+import { CardForm } from "../components/CardForm.tsx";
+import { useSpaceCards } from "../features/cards.ts";
 
 function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
   const { t } = useTranslation();
@@ -56,6 +58,7 @@ export function SpaceDetailPage() {
   const addTopic = useCreateTopic(spaceId);
   const updateSpace = useUpdateSpace(spaceId);
   const [topicName, setTopicName] = useState("");
+  const spaceCards = useSpaceCards(spaceId);
 
   const onAdd = (e: FormEvent) => {
     e.preventDefault();
@@ -88,7 +91,26 @@ export function SpaceDetailPage() {
         {addTopic.isError ? <p role="alert" className="mt-3 text-[14px] text-fg">{t("errors.saveFailed")}</p> : null}
         {space.data.topics.length === 0
           ? <p className="mt-6 text-muted">{t("topics.empty")}</p>
-          : <ul className="mt-6 divide-y divide-line">{space.data.topics.map((tp) => <TopicRow key={tp.id} topic={tp} spaceId={spaceId} />)}</ul>}
+          : <ul className="mt-6 divide-y divide-line" aria-label={t("topics.listLabel")}>{space.data.topics.map((tp) => <TopicRow key={tp.id} topic={tp} spaceId={spaceId} />)}</ul>}
+      </Card>
+
+      <Card className="mt-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-[20px] font-medium">{t("cards.title")}</h2>
+          <Link to="/review" search={{ space: spaceId }} className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("cards.startReview")}</Link>
+        </div>
+        <p className="mt-1 text-[14px] text-muted">{t("cards.intro")}</p>
+        <div className="mt-5"><CardForm spaceId={spaceId} /></div>
+        {spaceCards.data && spaceCards.data.cards.length > 0 ? (
+          <ul className="mt-6 divide-y divide-line" aria-label={t("cards.listLabel")}>
+            {spaceCards.data.cards.map((c) => (
+              <li key={c.id} className="flex items-baseline gap-3 py-2.5">
+                <span className="min-w-0 flex-1 truncate">{c.front}</span>
+                <span className="shrink-0 text-[12px] text-muted">{t(`cards.state.${c.state}`)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </Card>
     </section>
   );

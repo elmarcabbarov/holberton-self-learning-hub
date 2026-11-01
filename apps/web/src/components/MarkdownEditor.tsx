@@ -43,14 +43,16 @@ export interface MarkdownEditorProps {
   placeholder?: string;
   onChange(doc: string): void;
   onSave(): void;
+  /** Current selection text (empty when nothing is selected). */
+  onSelection?(text: string): void;
 }
 
 /** CodeMirror 6 Markdown editor. Text is edited as-is (LF); the server restores EOL/BOM (D-015, D-053). */
-export function MarkdownEditor({ value, docKey, readOnly, label, placeholder, onChange, onSave }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, docKey, readOnly, label, placeholder, onChange, onSave, onSelection }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
-  const handlers = useRef({ onChange, onSave });
-  handlers.current = { onChange, onSave };
+  const handlers = useRef({ onChange, onSave, onSelection });
+  handlers.current = { onChange, onSave, onSelection };
 
   useEffect(() => {
     if (!host.current) return;
@@ -67,7 +69,10 @@ export function MarkdownEditor({ value, docKey, readOnly, label, placeholder, on
         EditorView.contentAttributes.of({ "aria-label": label, "aria-multiline": "true", role: "textbox" }),
         cmPlaceholder(placeholder ?? ""),
         theme,
-        EditorView.updateListener.of((u) => { if (u.docChanged) handlers.current.onChange(u.state.doc.toString()); }),
+        EditorView.updateListener.of((u) => {
+          if (u.docChanged) handlers.current.onChange(u.state.doc.toString());
+          if (u.selectionSet) { const s = u.state.selection.main; handlers.current.onSelection?.(u.state.sliceDoc(s.from, s.to)); }
+        }),
       ],
     });
     view.current = new EditorView({ state, parent: host.current });

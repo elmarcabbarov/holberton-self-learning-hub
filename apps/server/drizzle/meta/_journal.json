@@ -43,6 +43,13 @@
       "when": 1793562744379,
       "tag": "0005_notes_fts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793564032794,
+      "tag": "0006_cards",
+      "breakpoints": true
     }
   ]
 }

@@ -75,7 +75,8 @@
     "empty": "No topics yet.",
     "rename": "Rename {name}",
     "archive": "Archive {name}",
-    "archiveConfirm": "Confirm archiving {name}"
+    "archiveConfirm": "Confirm archiving {name}",
+    "listLabel": "Topics in this space"
   },
   "common": {
     "loading": "Loading…",
@@ -131,5 +132,59 @@
       "self": "this note"
     },
     "leaveConfirm": "You have unsaved changes. Leave anyway?"
+  },
+  "cards": {
+    "title": "Cards",
+    "intro": "Write a question on the front and the answer on the back. Review them when they are due.",
+    "startReview": "Start review",
+    "formLabel": "New card",
+    "space": "Space",
+    "noSpace": "No space",
+    "topic": "Topic",
+    "noTopic": "No topic",
+    "front": "Front (question)",
+    "back": "Back (answer)",
+    "frontPlaceholder": "e.g. What does fork() return in the child?",
+    "backPlaceholder": "e.g. 0",
+    "create": "Add card",
+    "created": "Card added",
+    "listLabel": "Cards in this space",
+    "makeCard": "Make a card",
+    "fromSelection": "Make a card from the selection",
+    "badTopic": "This topic does not exist.",
+    "badNote": "This note does not exist.",
+    "inactive": "This card is suspended or archived.",
+    "state": {
+      "new": "new",
+      "learning": "learning",
+      "review": "review",
+      "relearning": "relearning"
+    }
+  },
+  "review": {
+    "title": "Review",
+    "progress": "{done} of {total}",
+    "show": "Show answer",
+    "rateLabel": "How well did you remember?",
+    "rating": {
+      "again": "Again",
+      "hard": "Hard",
+      "good": "Good",
+      "easy": "Easy"
+    },
+    "keys": "Space shows the answer · 1–4 rate",
+    "emptyTitle": "Nothing due right now",
+    "emptyBody": "New cards are due right away. Make cards from your notes or in a space.",
+    "finishedTitle": "Done for now",
+    "finishedBody": "{count, plural, one {You reviewed # card.} other {You reviewed # cards.}} Come back when more are due.",
+    "addCards": "Go to spaces",
+    "unit": {
+      "lessMin": "<1 min",
+      "min": "{n} min",
+      "hour": "{n} h",
+      "day": "{n, plural, one {# day} other {# days}}",
+      "month": "{n} mo",
+      "year": "{n} y"
+    }
   }
 }
