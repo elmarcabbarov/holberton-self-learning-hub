@@ -35,6 +35,8 @@ function sectionOf(line: string): Section | null {
 }
 
 const TASK_MARKER = /^(mandatory|optional|#advanced|advanced)$/i;
+/** Score line under a task in the intranet's "Tasks list" summary, e.g. "20/20" or "12 /12 pts". */
+const TASK_SCORE = /^\d+\s*\/\s*\d+(\s*pts)?$/i;
 const titleCase = (line: string) => line.split(/\s+/).every((w) => /^[^a-z]/.test(w) || /^(and|or|of|the|in|on|to|a|an|vs)$/.test(w));
 
 /**
@@ -101,7 +103,8 @@ export function parseProject(raw: string): ParsedProject {
         // A task heading is the first numbered line, or one followed by a task marker (classic layout).
         // Numbered steps inside a task body are not tasks.
         const m = /^(\d{1,3})\.\s+(.+)$/.exec(line);
-        const followedByMarker = lines[i + 1] !== undefined && TASK_MARKER.test(lines[i + 1]!);
+        const nextLine = lines[i + 1];
+        const followedByMarker = nextLine !== undefined && (TASK_MARKER.test(nextLine) || TASK_SCORE.test(nextLine));
         if (m && (taskHeaders === 0 || followedByMarker) && !out.tasks.some((x) => x.number === Number(m[1]))) {
           out.tasks.push({ number: Number(m[1]), title: m[2]! });
           taskHeaders++;

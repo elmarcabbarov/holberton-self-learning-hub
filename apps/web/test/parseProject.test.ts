@@ -85,6 +85,18 @@ describe("parseProject", () => {
   });
 });
 
+describe("intranet layouts", () => {
+  it("takes all task titles from the 'Tasks list' summary with scores", () => {
+    const q = parseProject("P\nBy: X\nTasks\n0. First\nBody text\n1 domain name pointing somewhere\nScore of the task\n20 /20 pts\nTasks list\n0\n1\n2\nTask 0 of 2\nTasks list\n0. First\n20/20\n1. Second\n10/10\n2. Third\n5/5\n");
+    expect(q.tasks).toEqual([{ number: 0, title: "First" }, { number: 1, title: "Second" }, { number: 2, title: "Third" }]);
+  });
+  it("tolerates indented lines from other browsers", () => {
+    const q = parseProject("Project badge\n100%\nMy Project\n\n    Novice\n    By: X\nLearning Objectives\nGeneral\n\n    You must be able to explain it\n    Know the acronyms\nRequirements\n");
+    expect(q.title).toBe("My Project");
+    expect(q.groups).toEqual([{ name: "General", objectives: ["You must be able to explain it", "Know the acronyms"] }]);
+  });
+});
+
 describe("Codex review regressions (parser)", () => {
   it("keeps ambiguous lines as objectives instead of headings", () => {
     const q = parseProject("P\nBy: X\nLearning Objectives\nList the available signals\nHow to handle a signal\nRequirements\n");
