@@ -9,7 +9,8 @@ export default defineConfig({
   use: { baseURL: `http://127.0.0.1:${PORT}`, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm --filter @hub/web build && node apps/server/src/main.ts",
+    // Fresh data dir per run: e2e results never depend on leftovers from earlier runs.
+    command: "rm -rf .data/e2e && pnpm --filter @hub/web build && node apps/server/src/main.ts",
     url: `http://127.0.0.1:${PORT}/api/health`,
     // Never reuse: a stale server with an old build makes e2e results lie.
     reuseExistingServer: false,

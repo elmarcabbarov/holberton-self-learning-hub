@@ -5,6 +5,8 @@ import { Placeholder } from "./routes/Placeholder.tsx";
 import { Auth } from "./routes/Auth.tsx";
 import { Spaces } from "./routes/Spaces.tsx";
 import { SpaceDetailPage } from "./routes/SpaceDetail.tsx";
+import { Notes } from "./routes/Notes.tsx";
+import { NoteEditorPage } from "./routes/NoteEditor.tsx";
 import { AuthGate } from "./components/AuthGate.tsx";
 
 const root = createRootRoute({ component: AuthGate, notFoundComponent: () => <Placeholder titleKey="errors.notFound" /> });
@@ -14,6 +16,8 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: Today }),
   createRoute({ getParentRoute: () => root, path: "/spaces", component: Spaces }),
   createRoute({ getParentRoute: () => root, path: "/spaces/$spaceId", component: SpaceDetailPage }),
+  createRoute({ getParentRoute: () => root, path: "/notes", component: Notes }),
+  createRoute({ getParentRoute: () => root, path: "/notes/$noteId", component: NoteEditorPage }),
   createRoute({ getParentRoute: () => root, path: "/review", component: () => <Placeholder titleKey="nav.review" /> }),
   createRoute({ getParentRoute: () => root, path: "/settings", component: Settings }),
 ];
