@@ -1,0 +1,9 @@
+# Project-scoped Codex settings. Loaded only when this project is trusted
+# (user-level ~/.codex/config.toml: [projects."<path>"] trust_level = "trusted").
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
