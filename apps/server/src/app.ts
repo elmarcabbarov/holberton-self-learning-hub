@@ -29,7 +29,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   });
 
   const database = openDatabase(config.dataDir);
-  const releaseLock = await acquireLock(join(config.dataDir, "data", "hub.lock")).catch((e) => { database.close(); throw e; });
+  const releaseLock = await acquireLock(join(config.dataDir, "data", "hub.lock.db")).catch((e) => { database.close(); throw e; });
   app.decorate("database", database);
 
   const vault = new Vault(database.db, join(config.dataDir, "vault"));
@@ -53,6 +53,15 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerAuth(app, database);
   await registerSpaceRoutes(app, database);
   await registerVaultRoutes(app, vault);
+
+  // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.
+  app.setErrorHandler((error: { statusCode?: number; code?: string }, req, reply) => {
+    const status = error.statusCode ?? 500;
+    if (status === 413) return reply.code(413).send({ error: { code: "payload_too_large", messageKey: "errors.payloadTooLarge" } });
+    if (status >= 400 && status < 500) return reply.code(status).send({ error: { code: "validation_failed", messageKey: "errors.validation" } });
+    req.log.error(error);
+    return reply.code(500).send({ error: { code: "internal", messageKey: "errors.internal" } });
+  });
 
   app.get("/api/health", async (_req, reply) => {
     const dbOk = pingDatabase(database.sqlite);

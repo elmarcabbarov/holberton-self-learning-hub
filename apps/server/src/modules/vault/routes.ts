@@ -6,6 +6,8 @@ import type { Vault } from "./service.ts";
 
 type Row = ReturnType<Vault["list"]>[number];
 const PAGE = 200;
+/** 2M chars of UTF-8 text can be up to ~6 MB once JSON-escaped and encoded. */
+const NOTE_BODY_LIMIT = 12 * 1024 * 1024;
 
 const summary = (r: Row) => NoteSummary.parse({
   id: r.id, path: r.path, title: r.title, missing: r.missingSince !== null,
@@ -15,8 +17,10 @@ const err = (reply: FastifyReply, status: number, code: string, messageKey: stri
   reply.code(status).send({ error: { code, messageKey, ...(details === undefined ? {} : { details }) } });
 
 export async function registerVaultRoutes(app: FastifyInstance, vault: Vault): Promise<void> {
-  app.get("/api/notes", async (req) => {
-    const { cursor } = z.object({ cursor: z.string().max(600).optional() }).parse(req.query ?? {});
+  app.get("/api/notes", async (req, reply) => {
+    const q = z.object({ cursor: z.string().max(600).optional() }).safeParse(req.query ?? {});
+    if (!q.success) return err(reply, 400, "validation_failed", "errors.validation");
+    const { cursor } = q.data;
     const rows = vault.list().filter((r) => cursor === undefined || r.path > cursor);
     const page = rows.slice(0, PAGE);
     return NoteList.parse({ notes: page.map(summary), nextCursor: rows.length > PAGE ? page[page.length - 1]!.path : null });
@@ -37,7 +41,7 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault): P
     }
   });
 
-  app.post("/api/notes", async (req, reply) => {
+  app.post("/api/notes", { bodyLimit: NOTE_BODY_LIMIT }, async (req, reply) => {
     const body = CreateNote.safeParse(req.body);
     if (!body.success) return err(reply, 400, "validation_failed", "errors.validation");
     const out = await vault.create(body.data.path, body.data.content);
@@ -49,7 +53,7 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault): P
     }
   });
 
-  app.put("/api/notes/:id", async (req, reply) => {
+  app.put("/api/notes/:id", { bodyLimit: NOTE_BODY_LIMIT }, async (req, reply) => {
     const p = IdParam.safeParse(req.params);
     if (!p.success) return err(reply, 404, "not_found", "errors.notFound");
     const body = SaveNote.safeParse(req.body);

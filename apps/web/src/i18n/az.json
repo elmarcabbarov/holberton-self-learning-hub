@@ -33,7 +33,16 @@
   "errors": {
     "notFound": "Səhifə tapılmadı",
     "saveFailed": "Yadda saxlamaq alınmadı. Yenidən cəhd et.",
-    "loadFailed": "Bu səhifəni yükləmək alınmadı."
+    "loadFailed": "Bu səhifəni yükləmək alınmadı.",
+    "payloadTooLarge": "Qeyd çox böyükdür (limit 2 MB).",
+    "validation": "Bəzi sahələr düzgün deyil.",
+    "internal": "Serverdə xəta baş verdi.",
+    "unauthorized": "Sessiyan bitib. Yenidən daxil ol.",
+    "forbiddenHost": "Bu ünvana icazə yoxdur.",
+    "forbiddenOrigin": "Sorğu təhlükəsizlik səbəbi ilə bloklandı.",
+    "unsupportedMediaType": "Dəstəklənməyən sorğu formatı.",
+    "invalidToken": "Etibarsız daxil olma linki.",
+    "rateLimited": "Çox cəhd edildi."
   },
   "auth": {
     "title": "Hub-a daxil ol",
@@ -72,5 +81,12 @@
     "save": "Yadda saxla",
     "cancel": "Ləğv et",
     "confirmArchive": "Arxivləmək üçün yenidən klik et"
+  },
+  "notes": {
+    "exists": "Bu yolda artıq qeyd var.",
+    "collision": "Başqa bir qeyd yalnız hərf registri və ya diakritik işarələrlə fərqlənir. Başqa ad seç.",
+    "invalidPath": "Bu fayl adı və ya qovluq icazəli deyil.",
+    "conflict": "Bu qeyd açdığından sonra diskdə dəyişib.",
+    "readOnly": "Hub bu faylı təhlükəsiz redaktə edə bilmir (dəstəklənməyən encoding və ya qarışıq sətir sonları)."
   }
 }

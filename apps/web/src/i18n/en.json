@@ -33,7 +33,16 @@
   "errors": {
     "notFound": "Page not found",
     "saveFailed": "Could not save. Try again.",
-    "loadFailed": "Could not load this page."
+    "loadFailed": "Could not load this page.",
+    "payloadTooLarge": "The note is too large (limit 2 MB).",
+    "validation": "Some fields are not valid.",
+    "internal": "Something went wrong on the server.",
+    "unauthorized": "Your session has ended. Sign in again.",
+    "forbiddenHost": "This address is not allowed.",
+    "forbiddenOrigin": "Request blocked for security reasons.",
+    "unsupportedMediaType": "Unsupported request format.",
+    "invalidToken": "Invalid sign-in link.",
+    "rateLimited": "Too many attempts."
   },
   "auth": {
     "title": "Sign in to your Hub",
@@ -72,5 +81,12 @@
     "save": "Save",
     "cancel": "Cancel",
     "confirmArchive": "Click again to archive"
+  },
+  "notes": {
+    "exists": "A note with this path already exists.",
+    "collision": "Another note differs only in letter case or accents. Choose a different name.",
+    "invalidPath": "This file name or folder is not allowed.",
+    "conflict": "This note changed on disk since you opened it.",
+    "readOnly": "Hub cannot safely edit this file (unsupported encoding or mixed line endings)."
   }
 }

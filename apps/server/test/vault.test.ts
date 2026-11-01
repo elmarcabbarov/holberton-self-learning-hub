@@ -152,3 +152,33 @@ describe("crash recovery", () => {
     expect(() => readFileSync(join(root, ".hub-tmp-abc"))).toThrow();
   });
 });
+
+describe("Codex review regressions", () => {
+  it("refuses to save over bytes that became invalid UTF-8 before any reconcile", async () => {
+    const created = await vault.create("enc.md", "a\n");
+    const id = created.kind === "created" ? created.note.id : "";
+    writeFileSync(join(root, "enc.md"), Buffer.from([0x61, 0xff]));
+    const r = (await vault.read(id))!;
+    const out = await vault.save(id, r.text, r.version.sha256);
+    expect(out).toEqual({ kind: "read_only", reason: "invalid_utf8" });
+    expect(readFileSync(join(root, "enc.md")).equals(Buffer.from([0x61, 0xff]))).toBe(true);
+  });
+
+  it("does not assign a rename when an earlier-missing note shares the hash", async () => {
+    writeFileSync(join(root, "A.md"), "same"); writeFileSync(join(root, "B.md"), "same");
+    await vault.reconcile();
+    rmSync(join(root, "A.md")); await vault.reconcile(); // A missing
+    rmSync(join(root, "B.md")); writeFileSync(join(root, "C.md"), "same");
+    const r = await vault.reconcile();
+    expect(r.renamed).toBe(0);
+    expect(vault.list().filter((n) => n.missingSince).map((n) => n.path).sort()).toEqual(["A.md", "B.md"]);
+  });
+
+  it("keeps unreadable (too large) files from being marked missing", async () => {
+    writeFileSync(join(root, "big.md"), "small"); await vault.reconcile();
+    writeFileSync(join(root, "big.md"), Buffer.alloc(2 * 1024 * 1024 + 1, 0x61));
+    const r = await vault.reconcile();
+    expect(r.missing).toBe(0);
+    expect(vault.list().find((n) => n.path === "big.md")?.missingSince).toBeNull();
+  });
+});

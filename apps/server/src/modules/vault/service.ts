@@ -106,13 +106,15 @@ export class Vault {
     return this.queue.run(async () => {
       const note = this.get(id);
       if (!note || note.missingSince) return { kind: "not_found" };
-      if (note.readOnlyReason) return { kind: "read_only", reason: note.readOnlyReason };
       const abs = await resolveInVault(this.root, note.path);
       const current = await readStable(abs);
       if (current.sha256 !== expectedSha256) return { kind: "conflict", current: versionOf(current) };
+      // Encoding and write restrictions come from the bytes on disk now, never from the index (D-053).
+      const decodedNow = decodeNote(current.bytes);
+      if (decodedNow.readOnlyReason) return { kind: "read_only", reason: decodedNow.readOnlyReason };
 
-      const eol: Eol = note.eol === "crlf" ? "crlf" : "lf";
-      const bytes = encodeNote(text, eol, note.bom);
+      const eol: Eol = decodedNow.eol === "crlf" ? "crlf" : "lf";
+      const bytes = encodeNote(text, eol, decodedNow.bom);
       if (bytes.length > MAX_NOTE_BYTES) return { kind: "read_only", reason: "too_large" };
       const after = sha256(bytes);
       if (after === current.sha256) return { kind: "saved", note };
@@ -145,8 +147,9 @@ export class Vault {
     return this.queue.run(async () => {
       const report: ReconcileReport = { added: 0, updated: 0, renamed: 0, missing: 0, error: null };
       let files: Map<string, { bytes: Buffer; version: FileVersion }>;
+      let unreadable: Set<string>;
       try {
-        files = await this.scan();
+        ({ files, unreadable } = await this.scan());
       } catch (err) {
         // Never mark notes missing after a failed enumeration (D-052).
         report.error = (err as Error).message;
@@ -164,22 +167,28 @@ export class Vault {
           report.updated++;
         }
       }
-      const gone = rows.filter((r) => !files.has(r.path) && !r.missingSince);
-      // Rename: exactly one gone row and exactly one new file share a hash.
+      // Unreadable files exist on disk: never treat them as gone or as rename candidates.
+      const absent = rows.filter((r) => !files.has(r.path) && !unreadable.has(r.path));
+      const gone = absent.filter((r) => !r.missingSince);
+      // Rename: exactly one absent row (newly gone OR already missing) and exactly one new file share a hash.
       const renamedNew = new Set<string>();
-      for (const row of gone) {
+      const renamedRows = new Set<string>();
+      for (const row of absent) {
         const sameHashNew = newPaths.filter((p) => files.get(p)!.version.sha256 === row.contentSha256);
-        const sameHashGone = gone.filter((g) => g.contentSha256 === row.contentSha256);
-        if (sameHashNew.length === 1 && sameHashGone.length === 1 && !renamedNew.has(sameHashNew[0]!)) {
+        const sameHashAbsent = absent.filter((g) => g.contentSha256 === row.contentSha256);
+        if (sameHashNew.length === 1 && sameHashAbsent.length === 1 && !renamedNew.has(sameHashNew[0]!)) {
           const path = sameHashNew[0]!;
           const f = files.get(path)!;
           this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
           renamedNew.add(path);
+          renamedRows.add(row.id);
           report.renamed++;
-        } else {
-          this.db.update(notes).set({ missingSince: iso(), updatedAt: iso() }).where(eq(notes.id, row.id)).run();
-          report.missing++;
         }
+      }
+      for (const row of gone) {
+        if (renamedRows.has(row.id)) continue;
+        this.db.update(notes).set({ missingSince: iso(), updatedAt: iso() }).where(eq(notes.id, row.id)).run();
+        report.missing++;
       }
       for (const path of newPaths) {
         if (renamedNew.has(path)) continue;
@@ -199,8 +208,9 @@ export class Vault {
     return [...groups.values()].filter((g) => g.length > 1);
   }
 
-  private async scan(): Promise<Map<string, { bytes: Buffer; version: FileVersion }>> {
+  private async scan(): Promise<{ files: Map<string, { bytes: Buffer; version: FileVersion }>; unreadable: Set<string> }> {
     const out = new Map<string, { bytes: Buffer; version: FileVersion }>();
+    const unreadable = new Set<string>();
     const walk = async (relDir: string) => {
       const entries = await readdir(join(this.root, relDir), { withFileTypes: true });
       for (const e of entries) {
@@ -212,13 +222,13 @@ export class Vault {
           const file = await readStable(join(this.root, rel));
           out.set(rel, { bytes: file.bytes, version: versionOf(file) });
         } catch (err) {
-          if (err instanceof PathError) continue; // too large / unstable / not regular: skip
+          if (err instanceof PathError) { unreadable.add(rel); continue; } // too large / unstable: present but not indexed
           throw err;
         }
       }
     };
     await walk("");
-    return out;
+    return { files: out, unreadable };
   }
 
   /** Completes or rolls back journaled operations after a crash (D-050). Never deletes user content. */

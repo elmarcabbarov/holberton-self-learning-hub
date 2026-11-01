@@ -59,3 +59,18 @@ describe("data directory lock", () => {
     await expect(buildApp(loadConfig({ HUB_DATA: t.dir, HUB_VAULT_WATCH: "0" }))).rejects.toThrow(/Another Hub server/);
   });
 });
+
+describe("request limits and validation", () => {
+  it("accepts a 1.1 MB note and rejects a body over the limit with the contract envelope", async () => {
+    const ok = await t.req({ method: "POST", url: "/api/notes", payload: { path: "large.md", content: "ə".repeat(550_000) } });
+    expect(ok.statusCode).toBe(201);
+    const tooBig = await t.req({ method: "POST", url: "/api/notes", payload: JSON.stringify({ path: "x.md", content: "a".repeat(13 * 1024 * 1024) }) });
+    expect(tooBig.statusCode).toBe(413);
+    expect(tooBig.json().error.code).toBe("payload_too_large");
+  });
+  it("returns 400 for invalid pagination input", async () => {
+    const res = await t.req({ method: "GET", url: "/api/notes?cursor=a&cursor=b" });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe("validation_failed");
+  });
+});
