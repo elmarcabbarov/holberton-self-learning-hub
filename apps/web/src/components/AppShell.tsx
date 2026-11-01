@@ -54,7 +54,11 @@ export function AppShell() {
           <Outlet />
         </main>
         <footer className="px-6 pb-4 text-[12px] text-muted md:px-10" role="status">
-          {health.isSuccess ? t("status.serverOk", { version: health.data.version }) : health.isError ? t("status.serverDown") : null}
+          {health.isSuccess
+            ? health.data.status === "ok"
+              ? t("status.serverOk", { version: health.data.version })
+              : t("status.degraded")
+            : health.isError ? t("status.serverDown") : null}
         </footer>
       </div>
     </div>

@@ -3,15 +3,33 @@ import fastifyStatic from "@fastify/static";
 import { existsSync } from "node:fs";
 import { HealthResponse } from "@hub/contracts";
 import type { HubConfig } from "./config.ts";
+import { openDatabase, pingDatabase, type DatabaseHandle } from "./lib/db/index.ts";
+
+declare module "fastify" {
+  interface FastifyInstance {
+    database: DatabaseHandle;
+  }
+}
 
 export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
   });
 
-  app.get("/api/health", async () => {
-    // Responses are validated too (D-014).
-    return HealthResponse.parse({ status: "ok", version: config.version, mode: config.mode });
+  const database = openDatabase(config.dataDir);
+  app.decorate("database", database);
+  app.addHook("onClose", async () => database.close());
+
+  app.get("/api/health", async (_req, reply) => {
+    const dbOk = pingDatabase(database.sqlite);
+    // Responses are validated too (D-014). Unhealthy → 503 so Docker and clients notice.
+    const body = HealthResponse.parse({
+      status: dbOk ? "ok" : "degraded",
+      version: config.version,
+      mode: config.mode,
+      db: dbOk ? "ok" : "error",
+    });
+    return reply.code(dbOk ? 200 : 503).send(body);
   });
 
   if (config.webDist && existsSync(config.webDist)) {

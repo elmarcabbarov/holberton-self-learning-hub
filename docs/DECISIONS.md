@@ -42,3 +42,10 @@ Mənbələr: Elmar (E), Claude araşdırması (C), Codex rəyi 2026-11-01 (X).
 | D-038 | SSRF: `guarded-fetch@0.2.x` (Apache-2.0, Vercel Labs), `guardedFetchText` limitləri ilə + öz port, content-type və domen siyasətimiz. AI provider endpoint-ləri üçün **ayrıca** siyasət (konfiq edilmiş Ollama ünvanı icazəlidir). Research URL-ləri bu istisnanı heç vaxt almır |
 | D-039 | Research: source snapshot-ları generasiyadan əvvəl dondurulur. Consent = sabit source scope + provider (bayt-bayt preview yox), faktiki sorğular audit olunur. `requestedSourceMode` və `achievedSourceMode` ayrıca saxlanılır. Citation mövcudluğu ≠ faktın dəstəklənməsi (UI-da belə yazılır). Regex skaneri `safe_on_host` üçün əsas sayılmır: practice default olaraq `container_recommended`-dir |
 | D-040 | Realpath yoxlaması path komponent sərhədində aparılır. Parent symlink yarışı sənədləşdirilmiş qalıq riskdir. Hash yoxlaması xarici yazıcı ilə yarışı tam aradan qaldırmır, bu da sənədləşdirilir |
+
+## İcra zamanı əlavələr
+| ID | Qərar | Mənbə |
+|---|---|---|
+| D-041 | pnpm 12 build icazələri `pnpm-workspace.yaml → allowBuilds` ilə verilir (`onlyBuiltDependencies` nəzərə alınmır və `ERR_PNPM_IGNORED_BUILDS` verir). İcazəlilər: `better-sqlite3`, `esbuild` | C |
+| D-042 | better-sqlite3 13 Node-API prebuild-ləri paketin içindədir (linux-x64/arm64, musl, darwin, win32). Node 26-da kompilyasiya tələb olunmur. SQLite 3.53.4, FTS5 aktivdir (2026-11-01 yoxlanıb) | C |
+| D-043 | DB faylı: `<HUB_DATA>/data/hub.db`. Migration-lar `apps/server/drizzle/` qovluğundadır (`drizzle-kit generate`), runtime-da `migrate()` ilə tətbiq olunur. İlk cədvəl `app_meta`-dır (instance_id, created_at) | C |

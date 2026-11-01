@@ -8,7 +8,7 @@
     "emptyCta": "Sahə yarat"
   },
   "settings": { "title": "Ayarlar", "language": "İnterfeys dili", "theme": "Mövzu", "themeSystem": "Sistem", "themeDark": "Qaranlıq", "themeLight": "İşıqlı" },
-  "status": { "serverOk": "Server işləyir · v{version}", "serverDown": "Lokal serverə qoşulmaq olmur" },
+  "status": { "serverOk": "Server işləyir · v{version}", "degraded": "Server işləyir, amma verilənlər bazası cavab vermir", "serverDown": "Lokal serverə qoşulmaq olmur" },
   "soon": "Hələ hazır deyil",
   "errors": { "notFound": "Səhifə tapılmadı" }
 }
