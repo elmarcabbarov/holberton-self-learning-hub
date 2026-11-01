@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PKG_VERSION: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
@@ -60,7 +61,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HubConfig {
     publicPort: env.HUB_PUBLIC_PORT ? parsePort(env.HUB_PUBLIC_PORT) : parsePort(env.HUB_PORT),
     dev: env.HUB_DEV === "1",
     bindHost,
-    dataDir: resolve(env.HUB_DATA ?? ".data"),
+    // Default is the repository root's .data, independent of the working directory.
+    dataDir: env.HUB_DATA ? resolve(env.HUB_DATA) : fileURLToPath(new URL("../../../.data", import.meta.url)),
     webDist: env.HUB_WEB_DIST ? resolve(env.HUB_WEB_DIST) : null,
     version: PKG_VERSION,
   };

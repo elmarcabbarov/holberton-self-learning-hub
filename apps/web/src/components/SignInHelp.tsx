@@ -10,7 +10,7 @@ export function SignInHelp({ errorKey }: { errorKey?: string }) {
       <p className="mt-4 text-muted">{t("auth.body")}</p>
       <div className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-6">
         <p className="text-[13px] text-muted">{t("auth.native")}</p>
-        <pre className="mt-2 overflow-x-auto font-mono text-[13px]">pnpm --filter @hub/server token</pre>
+        <pre className="mt-2 overflow-x-auto font-mono text-[13px]">{import.meta.env.DEV ? "pnpm --filter @hub/server token:dev" : "pnpm --filter @hub/server token"}</pre>
         <p className="mt-5 text-[13px] text-muted">{t("auth.docker")}</p>
         <pre className="mt-2 overflow-x-auto font-mono text-[13px]">docker compose exec hub node apps/server/src/cli.ts token</pre>
       </div>
