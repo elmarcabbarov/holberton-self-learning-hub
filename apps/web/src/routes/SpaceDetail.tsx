@@ -54,9 +54,10 @@ function ArchivedTopicRow({ topic, spaceId }: { topic: Topic; spaceId: string })
   const { t } = useTranslation();
   const update = useUpdateTopic(spaceId);
   return (
-    <li className="flex items-center gap-3 py-2">
+    <li className="flex flex-wrap items-center gap-3 py-2">
       <span className="flex-1 text-muted">{topic.name}</span>
       <Button onClick={() => update.mutate({ id: topic.id, archived: false })} disabled={update.isPending} aria-label={t("archive.restoreNamed", { name: topic.name })}>{t("archive.restore")}</Button>
+      {update.isError ? <p role="alert" className="w-full text-[13px]">{t("errors.saveFailed")}</p> : null}
     </li>
   );
 }

@@ -91,7 +91,8 @@
     "loading": "Yüklənir…",
     "save": "Yadda saxla",
     "cancel": "Ləğv et",
-    "confirmArchive": "Arxivləmək üçün yenidən klik et"
+    "confirmArchive": "Arxivləmək üçün yenidən klik et",
+    "retry": "Yenidən cəhd et"
   },
   "notes": {
     "exists": "Bu yolda artıq qeyd var.",

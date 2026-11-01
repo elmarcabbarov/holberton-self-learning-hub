@@ -64,7 +64,11 @@ export function Spaces() {
                 </li>
               ))}
             </ul>
-          ) : archived.isSuccess ? <p className="mt-3 text-[14px] text-muted">{t("archive.noneSpaces")}</p> : null
+          ) : archived.isSuccess ? <p className="mt-3 text-[14px] text-muted">{t("archive.noneSpaces")}</p>
+            : archived.isError ? (
+              <p role="alert" className="mt-3 flex items-center gap-3 text-[14px]">{t("errors.loadFailed")}
+                <Button variant="ghost" onClick={() => void archived.refetch()}>{t("common.retry")}</Button></p>
+            ) : null
         ) : null}
         {restore.isError ? <p role="alert" className="mt-3 text-[14px]">{t("errors.saveFailed")}</p> : null}
       </div>

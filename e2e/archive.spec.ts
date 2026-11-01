@@ -29,3 +29,12 @@ test("archive and restore a topic and a space", async ({ page }) => {
   await page.getByRole("button", { name: `Restore ${name}` }).click();
   await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
 });
+
+test("archived spaces that fail to load show an error with retry", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/spaces?archived=1", (r) => r.fulfill({ status: 500, contentType: "application/json", body: '{"error":{"code":"internal","messageKey":"errors.internal"}}' }));
+  await page.goto("/spaces");
+  await page.getByRole("button", { name: "Show archived spaces" }).click();
+  await expect(page.getByRole("alert")).toContainText("Could not load this page.");
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+});

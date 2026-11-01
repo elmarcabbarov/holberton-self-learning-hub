@@ -91,7 +91,8 @@
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
-    "confirmArchive": "Click again to archive"
+    "confirmArchive": "Click again to archive",
+    "retry": "Try again"
   },
   "notes": {
     "exists": "A note with this path already exists.",
