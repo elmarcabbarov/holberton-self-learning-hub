@@ -40,6 +40,8 @@ export function NoteEditorPage() {
       doc.current = "";
       setDocKey("");
       setStatus("clean");
+      setSelection("");
+      setCardSeed(null); // a card draft must never move to another note
     }
   }, [noteId]);
 

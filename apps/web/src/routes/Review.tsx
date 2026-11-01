@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { Rating } from "@hub/contracts";
@@ -9,28 +9,43 @@ const RATINGS: { value: Rating; key: "again" | "hard" | "good" | "easy" }[] = [
   { value: 1, key: "again" }, { value: 2, key: "hard" }, { value: 3, key: "good" }, { value: 4, key: "easy" },
 ];
 
+/** Remounts the session when the filter changes, so position and reveal state never leak between queues. */
 export function Review() {
-  const { t } = useTranslation();
   const { space } = useSearch({ from: "/review" });
+  return <ReviewSession key={space ?? "all"} space={space} />;
+}
+
+const cardKey = (c: { id: string; due: string }) => `${c.id}@${c.due}`;
+
+function ReviewSession({ space }: { space: string | undefined }) {
+  const { t } = useTranslation();
   const queue = useReviewQueue(space);
   const review = useReviewCard();
-  const [index, setIndex] = useState(0);
+  const [reviewed, setReviewed] = useState<Set<string>>(() => new Set());
   const [shown, setShown] = useState(false);
   const [done, setDone] = useState(0);
-  const items = queue.data?.items ?? [];
-  const card = items[index];
+  // A rating that has not been acknowledged keeps its eventId, so a retry can never apply twice (D-056).
+  const pending = useRef<{ key: string; rating: Rating; eventId: string } | null>(null);
+
+  const remaining = (queue.data?.items ?? []).filter((c) => !reviewed.has(cardKey(c)));
+  // While a fresh batch loads, nothing from the old batch is shown or rateable.
+  const card = queue.isFetching ? undefined : remaining[0];
 
   const rate = useCallback((rating: Rating) => {
     if (!card || !shown || review.isPending) return;
-    review.mutate({ id: card.id, rating, eventId: crypto.randomUUID() }, {
+    const key = cardKey(card);
+    if (pending.current?.key !== key || pending.current.rating !== rating) pending.current = { key, rating, eventId: crypto.randomUUID() };
+    review.mutate({ id: card.id, rating, eventId: pending.current.eventId }, {
       onSuccess: () => {
+        pending.current = null;
         setDone((n) => n + 1);
         setShown(false);
-        if (index + 1 < items.length) setIndex(index + 1);
-        else { setIndex(0); void queue.refetch(); } // cards rated Again may be due again
+        const next = new Set(reviewed).add(key);
+        setReviewed(next);
+        if (remaining.length <= 1) void queue.refetch(); // cards rated Again come back with a new due date
       },
     });
-  }, [card, shown, review, index, items.length, queue]);
+  }, [card, shown, review, reviewed, remaining.length, queue]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -42,14 +57,14 @@ export function Review() {
     return () => window.removeEventListener("keydown", onKey);
   }, [shown, card, rate]);
 
-  if (queue.isPending) return <p className="text-muted" role="status">{t("common.loading")}</p>;
+  if (queue.isPending || (queue.isFetching && remaining.length === 0)) return <p className="text-muted" role="status">{t("common.loading")}</p>;
   if (queue.isError) return <p role="alert">{t("errors.loadFailed")}</p>;
 
   return (
     <section aria-labelledby="review-title">
       <div className="flex items-baseline justify-between gap-4">
         <PageTitle id="review-title">{t("review.title")}</PageTitle>
-        {card ? <span className="text-[14px] text-muted" role="status">{t("review.progress", { done, total: done + (queue.data?.dueTotal ?? 0) - index })}</span> : null}
+        {card ? <span className="text-[14px] text-muted" role="status">{t("review.progress", { done, total: done + remaining.length })}</span> : null}
       </div>
 
       {!card ? (

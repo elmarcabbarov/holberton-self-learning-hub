@@ -45,3 +45,27 @@ test("make a card from a note selection", async ({ page }) => {
   await form.getByRole("button", { name: "Add card" }).click();
   await expect(page.getByRole("button", { name: /Make a card/ })).toBeVisible();
 });
+
+test("a retried rating after a lost response is applied only once", async ({ page }) => {
+  const stamp = Date.now();
+  const o = { origin: "http://127.0.0.1:3417" };
+  const space = await (await page.request.post("/api/spaces", { data: { name: `Retry ${stamp}` }, headers: o })).json();
+  const topic = await (await page.request.post(`/api/spaces/${space.id}/topics`, { data: { name: "t" }, headers: o })).json();
+  const card = await (await page.request.post("/api/cards", { data: { topicId: topic.id, front: `Q ${stamp}`, back: "A" }, headers: o })).json();
+
+  await page.goto(`/review?space=${space.id}`);
+  let first = true;
+  await page.route("**/api/cards/*/review", async (route) => {
+    if (first) { first = false; await route.fetch(); await route.abort(); } // server commits, client sees a failure
+    else await route.continue();
+  });
+  await expect(page.getByTestId("card-front")).toContainText(`Q ${stamp}`);
+  await page.keyboard.press("Space");
+  await page.keyboard.press("3");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await page.keyboard.press("3"); // retry
+  await expect(page.getByText("You reviewed 1 card.")).toBeVisible();
+
+  const cards = await (await page.request.get(`/api/cards?topicId=${topic.id}`)).json();
+  expect(cards.cards.find((c: { id: string }) => c.id === card.id).reps).toBe(1);
+});
