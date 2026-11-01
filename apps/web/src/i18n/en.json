@@ -1,14 +1,47 @@
 {
-  "app": { "name": "Self-Learning Hub", "skip": "Skip to content" },
-  "nav": { "today": "Today", "spaces": "Spaces", "review": "Review", "settings": "Settings", "primary": "Primary" },
+  "app": {
+    "name": "Self-Learning Hub",
+    "skip": "Skip to content"
+  },
+  "nav": {
+    "today": "Today",
+    "spaces": "Spaces",
+    "review": "Review",
+    "settings": "Settings",
+    "primary": "Primary"
+  },
   "today": {
     "title": "Today",
     "emptyTitle": "Nothing to review yet",
     "emptyBody": "Create a space and add your first note. Cards you make from your notes will show up here when they are due.",
     "emptyCta": "Create a space"
   },
-  "settings": { "title": "Settings", "language": "Interface language", "theme": "Theme", "themeSystem": "System", "themeDark": "Dark", "themeLight": "Light" },
-  "status": { "serverOk": "Server running · v{version}", "degraded": "The server is running, but the database is not responding", "serverDown": "Cannot reach the local server" },
+  "settings": {
+    "title": "Settings",
+    "language": "Interface language",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeDark": "Dark",
+    "themeLight": "Light"
+  },
+  "status": {
+    "serverOk": "Server running · v{version}",
+    "degraded": "The server is running, but the database is not responding",
+    "serverDown": "Cannot reach the local server"
+  },
   "soon": "Not built yet",
-  "errors": { "notFound": "Page not found" }
+  "errors": {
+    "notFound": "Page not found"
+  },
+  "auth": {
+    "title": "Sign in to your Hub",
+    "body": "Open the one-time link printed in the terminal where the Hub started. Need a new link? Run one of these commands:",
+    "native": "Running with pnpm",
+    "docker": "Running with Docker",
+    "checking": "Checking your session…",
+    "signingIn": "Signing you in…",
+    "invalid": "This link is invalid, expired or already used.",
+    "rateLimited": "Too many attempts. Wait a minute and try a new link.",
+    "error": "Sign-in failed. Try a new link."
+  }
 }

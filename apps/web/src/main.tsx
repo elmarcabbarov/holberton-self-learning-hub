@@ -6,7 +6,9 @@ import "./i18n/index.ts";
 import "./styles.css";
 import { applyTheme, getTheme } from "./theme.ts";
 import { router } from "./router.tsx";
+import { captureBootstrapToken } from "./bootstrapToken.ts";
 
+captureBootstrapToken();
 applyTheme(getTheme());
 const queryClient = new QueryClient();
 const el = document.getElementById("root");

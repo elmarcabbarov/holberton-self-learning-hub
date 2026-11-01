@@ -6,6 +6,8 @@ services:
     ports: ["127.0.0.1:${HUB_PORT:-3000}:3000"]
     environment:
       HUB_MODE: ${HUB_MODE:-local}
+      # Port the browser uses; needed for the Host check and printed links (D-046).
+      HUB_PUBLIC_PORT: ${HUB_PORT:-3000}
     volumes:
       - ${HUB_DATA:-./.data}:/data
       # Optional read-only linked vault (OBSIDIAN_STRATEGY §7). Uncomment and set LINKED_VAULT in .env.
