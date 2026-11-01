@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useBlocker, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Link2, Tag } from "lucide-react";
-import { NoteDetail, type NoteVersion } from "@hub/contracts";
-import { apiJson } from "../api.ts";
+import type { NoteVersion } from "@hub/contracts";
 import { MarkdownEditor } from "../components/MarkdownEditor.tsx";
 import { Button } from "../components/ui.tsx";
 import { noteKeys, saveNote, useBacklinks, useCreateNote, useNote, useNoteMeta } from "../features/notes.ts";
@@ -22,54 +21,78 @@ export function NoteEditorPage() {
 
   const doc = useRef("");
   const version = useRef<NoteVersion | null>(null);
+  const loadedFor = useRef<string | null>(null);
   const [docKey, setDocKey] = useState("");
   const [status, setStatus] = useState<Status>("clean");
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const statusRef = useRef<Status>("clean");
+  statusRef.current = status;
+  const hasUnsaved = () => ["dirty", "saving", "conflict", "error"].includes(statusRef.current);
 
-  // Load (or reload) the editor document from the server copy.
+  // Switching notes always starts from a clean slate (never carry a draft or version across notes).
   useEffect(() => {
-    if (!note.data) return;
-    if (note.data.version.sha256 === version.current?.sha256 && docKey) return;
+    if (loadedFor.current !== noteId) {
+      loadedFor.current = null;
+      version.current = null;
+      doc.current = "";
+      setDocKey("");
+      setStatus("clean");
+    }
+  }, [noteId]);
+
+  // Load from the server copy only when nothing unsaved would be lost (D-053, Codex review).
+  useEffect(() => {
+    if (!note.data || note.data.id !== noteId) return;
+    const first = loadedFor.current !== noteId;
+    if (!first && note.data.version.sha256 === version.current?.sha256) return;
+    if (!first && hasUnsaved()) return; // keep the draft and its baseline; the user resolves via save/conflict
     doc.current = note.data.content;
     version.current = note.data.version;
+    loadedFor.current = noteId;
     setDocKey(`${noteId}:${note.data.version.sha256}`);
     setStatus("clean");
-  }, [note.data, noteId, docKey]);
+  }, [note.data, noteId]);
 
-  const dirty = status === "dirty" || status === "conflict" || status === "error";
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  // Block in-app navigation and tab close while there are unsaved changes.
+  useBlocker({
+    shouldBlockFn: () => (hasUnsaved() ? !window.confirm(t("editor.leaveConfirm")) : false),
+    enableBeforeUnload: () => hasUnsaved(),
+  });
 
   const save = useCallback(async () => {
-    if (!version.current || note.data?.readOnlyReason) return;
+    if (!version.current || note.data?.readOnlyReason || statusRef.current === "saving") return;
     const content = doc.current;
     setStatus("saving");
-    const r = await saveNote(noteId, content, version.current.sha256);
-    if (r.kind === "saved") {
-      // Adopt the new version BEFORE the cached note changes, so the load effect does not reset the editor;
-      // edits typed during the save stay in the editor and stay dirty.
-      const fresh = await apiJson(`/api/notes/${noteId}`, NoteDetail);
-      version.current = fresh.version;
-      qc.setQueryData(noteKeys.detail(noteId), fresh);
-      setStatus(doc.current === content ? "saved" : "dirty");
-      void qc.invalidateQueries({ queryKey: noteKeys.meta(noteId) });
-      void qc.invalidateQueries({ queryKey: noteKeys.list });
-    } else if (r.kind === "conflict") {
-      setStatus("conflict");
-    } else {
-      setErrorKey(r.messageKey);
+    try {
+      const r = await saveNote(noteId, content, version.current.sha256);
+      if (r.kind === "saved") {
+        // The PUT response carries the version of exactly the bytes we wrote.
+        version.current = r.version;
+        setStatus(doc.current === content ? "saved" : "dirty");
+        void qc.invalidateQueries({ queryKey: noteKeys.meta(noteId) });
+        void qc.invalidateQueries({ queryKey: noteKeys.backlinks(noteId) });
+        void qc.invalidateQueries({ queryKey: noteKeys.list });
+      } else if (r.kind === "conflict") {
+        setStatus("conflict");
+      } else {
+        setErrorKey(r.messageKey);
+        setStatus("error");
+      }
+    } catch {
+      setErrorKey("errors.saveFailed");
       setStatus("error");
     }
   }, [noteId, note.data?.readOnlyReason, qc]);
 
   const reloadFromDisk = async () => {
-    version.current = null;
-    setDocKey("");
-    await note.refetch();
+    // Explicit user choice: drop the draft and load the current file.
+    const res = await note.refetch();
+    if (!res.data) return;
+    doc.current = res.data.content;
+    version.current = res.data.version;
+    loadedFor.current = noteId;
+    setDocKey(`${noteId}:${res.data.version.sha256}:${Date.now()}`);
+    setStatus("clean");
   };
 
   const keepMineAsCopy = () => {

@@ -1,7 +1,8 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Backlinks, NoteConflict, NoteDetail, NoteList, NoteMeta, NoteSummary, SearchResults, VaultStatus } from "@hub/contracts";
+import { createHash } from "node:crypto";
+import { Backlinks, SavedNote, NoteConflict, NoteDetail, NoteList, NoteMeta, NoteSummary, SearchResults, VaultStatus } from "@hub/contracts";
 import { buildApp } from "../src/app.ts";
 import { loadConfig } from "../src/config.ts";
 import { signedInApp, type TestApp } from "./helpers.ts";
@@ -24,6 +25,8 @@ describe("notes API", () => {
 
     const saved = await t.req({ method: "PUT", url: `/api/notes/${id}`, payload: { content: "# execve(2)\n", expectedSha256: detail.version.sha256 } });
     expect(saved.statusCode).toBe(200);
+    // The response carries the version of exactly the bytes written.
+    expect(SavedNote.parse(saved.json()).version.sha256).toBe(createHash("sha256").update("# execve(2)\n").digest("hex"));
     const again = NoteDetail.parse((await t.req({ method: "GET", url: `/api/notes/${id}` })).json());
     expect(again.content).toBe("# execve(2)\n");
   });

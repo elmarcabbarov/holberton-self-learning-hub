@@ -28,7 +28,7 @@ export function Notes() {
     create.mutate({ path: p, content: "" }, { onSuccess: (n) => void navigate({ to: "/notes/$noteId", params: { noteId: n.id } }) });
   };
   const createError = create.error instanceof ApiError ? create.error.messageKey : create.isError ? "errors.saveFailed" : null;
-  const present = notes.data?.notes.filter((n) => !n.missing) ?? [];
+  const present = notes.data?.pages.flatMap((p) => p.notes).filter((n) => !n.missing) ?? [];
 
   return (
     <section aria-labelledby="notes-title">
@@ -79,6 +79,9 @@ export function Notes() {
                 </li>
               ))}
             </ul>
+            {notes.hasNextPage ? (
+              <Button className="mt-4" onClick={() => void notes.fetchNextPage()} disabled={notes.isFetchingNextPage}>{t("notesPage.loadMore")}</Button>
+            ) : null}
           </>
         )}
       </div>

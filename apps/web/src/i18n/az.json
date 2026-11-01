@@ -100,7 +100,8 @@
     "searchPlaceholder": "Qeydlərində axtar…",
     "results": "Axtarış nəticələri",
     "noResults": "Uyğun qeyd yoxdur.",
-    "empty": "Hələ qeyd yoxdur. Yuxarıda yarat və ya vault qovluğuna .md fayllar qoy."
+    "empty": "Hələ qeyd yoxdur. Yuxarıda yarat və ya vault qovluğuna .md fayllar qoy.",
+    "loadMore": "Daha çox yüklə"
   },
   "editor": {
     "label": "{title} qeydini redaktə et",
@@ -128,6 +129,7 @@
       "file": "əlavə fayl",
       "resolved": "tapıldı",
       "self": "bu qeyd"
-    }
+    },
+    "leaveConfirm": "Yadda saxlanmamış dəyişikliklər var. Yenə də çıxırsan?"
   }
 }

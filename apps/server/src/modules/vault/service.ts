@@ -16,13 +16,13 @@ type Sqlite = Parameters<typeof indexNote>[1];
 type NoteRow = typeof notes.$inferSelect;
 
 export type SaveOutcome =
-  | { kind: "saved"; note: NoteRow }
+  | { kind: "saved"; note: NoteRow; version: FileVersion }
   | { kind: "conflict"; current: FileVersion }
   | { kind: "read_only"; reason: string }
   | { kind: "not_found" };
 
 export type CreateOutcome =
-  | { kind: "created"; note: NoteRow }
+  | { kind: "created"; note: NoteRow; version: FileVersion }
   | { kind: "exists" }
   | { kind: "collision"; with: string }
   | { kind: "invalid"; reason: string };
@@ -133,7 +133,7 @@ export class Vault {
         this.index(noteId, rel, file.bytes); // same transaction: metadata and index never diverge
       });
       this.resolve();
-      return { kind: "created", note: this.get(noteId) ?? row };
+      return { kind: "created", note: this.get(noteId) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
     });
   }
 
@@ -152,7 +152,7 @@ export class Vault {
       const bytes = encodeNote(text, eol, decodedNow.bom);
       if (bytes.length > MAX_NOTE_BYTES) return { kind: "read_only", reason: "too_large" };
       const after = sha256(bytes);
-      if (after === current.sha256) return { kind: "saved", note };
+      if (after === current.sha256) return { kind: "saved", note, version: versionOf(current) };
 
       const opId = randomUUID();
       this.db.insert(fileOps).values({ id: opId, kind: "replace", noteId: id, path: note.path, beforeSha256: current.sha256, afterSha256: after, state: "intent", createdAt: iso(), updatedAt: iso() }).run();
@@ -175,7 +175,8 @@ export class Vault {
         this.index(id, note.path, file.bytes);
       });
       this.resolve();
-      return { kind: "saved", note: this.get(id) ?? row };
+      // Version of the bytes we wrote; if an external writer raced us, the next save conflicts (D-040).
+      return { kind: "saved", note: this.get(id) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
     });
   }
 

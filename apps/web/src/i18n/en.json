@@ -100,7 +100,8 @@
     "searchPlaceholder": "Search your notes…",
     "results": "Search results",
     "noResults": "No notes match.",
-    "empty": "No notes yet. Create one above or put .md files in your vault folder."
+    "empty": "No notes yet. Create one above or put .md files in your vault folder.",
+    "loadMore": "Load more"
   },
   "editor": {
     "label": "Edit {title}",
@@ -128,6 +129,7 @@
       "file": "attachment",
       "resolved": "found",
       "self": "this note"
-    }
+    },
+    "leaveConfirm": "You have unsaved changes. Leave anyway?"
   }
 }

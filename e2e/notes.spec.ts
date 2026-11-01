@@ -56,3 +56,36 @@ test("a change on disk turns a save into a conflict; keep mine as a copy", async
   await page.goto("/notes");
   await expect(page.getByRole("link").filter({ hasText: new RegExp(`conflict-${stamp} \\(conflict `) })).toHaveCount(1);
 });
+
+test("unsaved changes block in-app navigation until confirmed", async ({ page }) => {
+  const stamp = Date.now();
+  await page.goto("/notes");
+  await page.getByLabel("New note").fill(`e2e/guard-${stamp}`);
+  await page.getByRole("button", { name: "Create note" }).click();
+  await editor(page).click();
+  await page.keyboard.type("draft text");
+  page.once("dialog", (d) => void d.dismiss());
+  await page.getByRole("link", { name: "Notes" }).first().click();
+  await expect(editor(page)).toContainText("draft text"); // still here
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("link", { name: "Notes" }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Notes");
+});
+
+test("switching between notes with identical content never carries a draft over", async ({ page }) => {
+  const stamp = Date.now();
+  const ids: string[] = [];
+  for (const name of ["twin-a", "twin-b"]) {
+    const res = await page.request.post("/api/notes", { data: { path: `e2e/${name}-${stamp}.md`, content: "same\n" }, headers: { origin: "http://127.0.0.1:3417" } });
+    ids.push((await res.json()).id);
+  }
+  await page.goto(`/notes/${ids[0]}`);
+  await editor(page).click();
+  await page.keyboard.press("ControlOrMeta+End");
+  await page.keyboard.type("only in A");
+  await page.keyboard.press("ControlOrMeta+s");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.goto(`/notes/${ids[1]}`);
+  await expect(editor(page)).toHaveText("same");
+  await expect(editor(page)).not.toContainText("only in A");
+});

@@ -52,3 +52,7 @@ export const OutgoingLink = z.object({
 });
 export const NoteMeta = z.object({ tags: z.array(z.string()), aliases: z.array(z.string()), links: z.array(OutgoingLink) });
 export type NoteMeta = z.infer<typeof NoteMeta>;
+
+/** Response of create/save: the version of the bytes THIS request wrote (never a later read). */
+export const SavedNote = NoteSummary.extend({ version: NoteVersion });
+export type SavedNote = z.infer<typeof SavedNote>;

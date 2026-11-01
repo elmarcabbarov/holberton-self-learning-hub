@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { Backlinks, CreateNote, IdParam, NoteDetail, NoteList, NoteMeta, NoteSummary, SaveNote, SearchResults, VaultStatus } from "@hub/contracts";
+import { Backlinks, SavedNote, CreateNote, IdParam, NoteDetail, NoteList, NoteMeta, NoteSummary, SaveNote, SearchResults, VaultStatus } from "@hub/contracts";
 import type { DatabaseHandle } from "../../lib/db/index.ts";
 import { backlinks, noteMeta, searchNotes } from "./search.ts";
 import { z } from "zod";
@@ -66,7 +66,7 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault, da
     if (!body.success) return err(reply, 400, "validation_failed", "errors.validation");
     const out = await vault.create(body.data.path, body.data.content);
     switch (out.kind) {
-      case "created": return reply.code(201).send(summary(out.note));
+      case "created": return reply.code(201).send(SavedNote.parse({ ...summary(out.note), version: out.version }));
       case "exists": return err(reply, 409, "conflict", "notes.exists");
       case "collision": return err(reply, 409, "conflict", "notes.collision", { with: out.with });
       case "invalid": return err(reply, 400, "validation_failed", "notes.invalidPath", { reason: out.reason });
@@ -80,7 +80,7 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault, da
     if (!body.success) return err(reply, 400, "validation_failed", "errors.validation");
     const out = await vault.save(p.data.id, body.data.content, body.data.expectedSha256);
     switch (out.kind) {
-      case "saved": return summary(out.note);
+      case "saved": return SavedNote.parse({ ...summary(out.note), version: out.version });
       case "conflict": return err(reply, 409, "conflict", "notes.conflict", { current: out.current });
       case "read_only": return err(reply, 409, "read_only", "notes.readOnly", { reason: out.reason });
       case "not_found": return err(reply, 404, "not_found", "errors.notFound");
