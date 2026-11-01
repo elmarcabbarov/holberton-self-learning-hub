@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, count, eq, isNull, max } from "drizzle-orm";
-import type { CreateSpace, CreateTopic, UpdateSpace, UpdateTopic } from "@hub/contracts";
+import { MAX_TOPIC_POSITION, type CreateSpace, type CreateTopic, type UpdateSpace, type UpdateTopic } from "@hub/contracts";
 import type { Db } from "../../lib/db/index.ts";
 import { spaces, topics } from "../../lib/db/schema.ts";
 
@@ -54,7 +54,14 @@ export function createTopic(db: Db, spaceId: string, input: CreateTopic): TopicR
   return db.transaction((tx) => {
     const space = tx.select().from(spaces).where(eq(spaces.id, spaceId)).get();
     if (!space || space.archivedAt) return undefined;
-    const last = tx.select({ p: max(topics.position) }).from(topics).where(eq(topics.spaceId, spaceId)).get()?.p;
+    let last = tx.select({ p: max(topics.position) }).from(topics).where(eq(topics.spaceId, spaceId)).get()?.p;
+    if (last !== null && last !== undefined && last >= MAX_TOPIC_POSITION) {
+      // Compact positions to 0..n-1 (keeping order) before appending.
+      const ordered = tx.select({ id: topics.id }).from(topics).where(eq(topics.spaceId, spaceId))
+        .orderBy(asc(topics.position), asc(topics.createdAt)).all();
+      ordered.forEach((r, i) => tx.update(topics).set({ position: i }).where(eq(topics.id, r.id)).run());
+      last = ordered.length - 1;
+    }
     const ts = now();
     const row: TopicRow = { id: randomUUID(), spaceId, name: input.name, position: last === null || last === undefined ? 0 : last + 1, createdAt: ts, updatedAt: ts, archivedAt: null };
     tx.insert(topics).values(row).run();

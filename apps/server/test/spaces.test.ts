@@ -81,6 +81,17 @@ describe("topics", () => {
     expect(res.statusCode).toBe(404);
   });
 
+  it("rejects out-of-range positions and compacts when the end is reached", async () => {
+    const s = await createSpace();
+    const a = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${s.id}/topics`, payload: { name: "a" } })).json());
+    expect((await t.req({ method: "PATCH", url: `/api/topics/${a.id}`, payload: { position: Number.MAX_SAFE_INTEGER } })).statusCode).toBe(400);
+    expect((await t.req({ method: "PATCH", url: `/api/topics/${a.id}`, payload: { position: 100_000 } })).statusCode).toBe(200);
+    const b = await t.req({ method: "POST", url: `/api/spaces/${s.id}/topics`, payload: { name: "b" } });
+    expect(b.statusCode).toBe(201);
+    const detail = SpaceDetail.parse((await t.req({ method: "GET", url: `/api/spaces/${s.id}` })).json());
+    expect(detail.topics.map((x) => [x.name, x.position])).toEqual([["a", 0], ["b", 1]]);
+  });
+
   it("rejects an empty update", async () => {
     const s = await createSpace();
     const topic = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${s.id}/topics`, payload: { name: "fork" } })).json());

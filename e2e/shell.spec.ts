@@ -90,3 +90,15 @@ test("create a space, add topics, rename and archive one", async ({ page }) => {
   await page.goto("/spaces");
   await expect(page.getByRole("link", { name: new RegExp(name) })).toContainText("2 topics");
 });
+
+test("a failed save shows an accessible error", async ({ page }) => {
+  await page.goto("/spaces");
+  const name = `Errors ${Date.now()}`;
+  await page.getByLabel("New space").fill(name);
+  await page.getByRole("button", { name: "Create space" }).click();
+  await page.getByRole("link", { name: new RegExp(name) }).click();
+  await page.route("**/api/spaces/*/topics", (route) => route.fulfill({ status: 500, contentType: "application/json", body: '{"error":{"code":"internal","messageKey":"errors.internal"}}' }));
+  await page.getByLabel("Topic name").fill("fork");
+  await page.getByRole("button", { name: "Add topic" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Could not save. Try again.");
+});

@@ -3,6 +3,8 @@ import { z } from "zod";
 const Name = z.string().trim().min(1).max(120);
 const Description = z.string().trim().max(2000);
 const Id = z.string().uuid();
+/** Upper bound keeps positions far from unsafe integers even after many appends. */
+export const MAX_TOPIC_POSITION = 100_000;
 
 export const Topic = z.object({
   id: Id,
@@ -48,7 +50,7 @@ export type CreateTopic = z.infer<typeof CreateTopic>;
 export const UpdateTopic = z.object({
   name: Name.optional(),
   archived: z.boolean().optional(),
-  position: z.number().int().nonnegative().optional(),
+  position: z.number().int().nonnegative().max(MAX_TOPIC_POSITION).optional(),
 }).refine((v) => Object.keys(v).length > 0, "empty update");
 export type UpdateTopic = z.infer<typeof UpdateTopic>;
 
