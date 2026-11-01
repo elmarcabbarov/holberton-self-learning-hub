@@ -39,6 +39,6 @@ jobs:
       - run: docker build -f docker/Dockerfile -t hub:ci .
       - name: Smoke test container
         run: |
-          docker run -d --name hub -p 127.0.0.1:3000:3000 --read-only --tmpfs /tmp --cap-drop ALL hub:ci
+          docker run -d --name hub -p 127.0.0.1:3000:3000 --read-only --tmpfs /tmp --cap-drop ALL -v hubdata:/data hub:ci
           for _ in $(seq 1 30); do curl -sf http://127.0.0.1:3000/api/health && exit 0; sleep 1; done
           docker logs hub; exit 1

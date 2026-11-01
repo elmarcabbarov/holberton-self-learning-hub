@@ -20,14 +20,16 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   app.decorate("database", database);
   app.addHook("onClose", async () => database.close());
 
-  app.get("/api/health", async () => {
-    // Responses are validated too (D-014).
-    return HealthResponse.parse({
-      status: "ok",
+  app.get("/api/health", async (_req, reply) => {
+    const dbOk = pingDatabase(database.sqlite);
+    // Responses are validated too (D-014). Unhealthy → 503 so Docker and clients notice.
+    const body = HealthResponse.parse({
+      status: dbOk ? "ok" : "degraded",
       version: config.version,
       mode: config.mode,
-      db: pingDatabase(database.sqlite) ? "ok" : "error",
+      db: dbOk ? "ok" : "error",
     });
+    return reply.code(dbOk ? 200 : 503).send(body);
   });
 
   if (config.webDist && existsSync(config.webDist)) {
