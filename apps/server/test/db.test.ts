@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { backupDatabase, getMeta, openDatabase, pingDatabase } from "../src/lib/db/index.ts";
 
@@ -28,7 +29,8 @@ describe("openDatabase", () => {
     const second = openDatabase(dir);
     expect(getMeta(second.db, "instance_id")).toBe(id);
     const applied = second.sqlite.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations").get() as { n: number };
-    expect(applied.n).toBe(1);
+    const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: unknown[] };
+    expect(applied.n).toBe(journal.entries.length);
     second.close();
   });
 

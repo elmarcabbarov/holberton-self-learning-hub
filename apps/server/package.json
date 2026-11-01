@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/main.ts",
+    "dev": "HUB_DEV=1 node --watch src/main.ts",
     "start": "node src/main.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "token": "node src/cli.ts token",
+    "token:dev": "HUB_DEV=1 node src/cli.ts token"
   },
   "dependencies": {
+    "@fastify/cookie": "11.1.5",
     "@fastify/static": "10.1.8",
     "@hub/contracts": "workspace:*",
     "better-sqlite3": "13.0.3",

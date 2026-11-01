@@ -1,12 +1,14 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { AppShell } from "./components/AppShell.tsx";
 import { Today } from "./routes/Today.tsx";
 import { Settings } from "./routes/Settings.tsx";
 import { Placeholder } from "./routes/Placeholder.tsx";
+import { Auth } from "./routes/Auth.tsx";
+import { AuthGate } from "./components/AuthGate.tsx";
 
-const root = createRootRoute({ component: AppShell, notFoundComponent: () => <Placeholder titleKey="errors.notFound" /> });
+const root = createRootRoute({ component: AuthGate, notFoundComponent: () => <Placeholder titleKey="errors.notFound" /> });
 
 const routes = [
+  createRoute({ getParentRoute: () => root, path: "/auth", component: Auth }),
   createRoute({ getParentRoute: () => root, path: "/", component: Today }),
   createRoute({ getParentRoute: () => root, path: "/spaces", component: () => <Placeholder titleKey="nav.spaces" /> }),
   createRoute({ getParentRoute: () => root, path: "/review", component: () => <Placeholder titleKey="nav.review" /> }),
