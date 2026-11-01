@@ -34,3 +34,21 @@ export const VaultStatus = z.object({
   collisions: z.array(z.array(z.string())),
 });
 export type VaultStatus = z.infer<typeof VaultStatus>;
+
+export const SearchHit = z.object({ id: z.string().uuid(), path: z.string(), title: z.string(), snippet: z.string() });
+export const SearchResults = z.object({ hits: z.array(SearchHit) });
+export type SearchResults = z.infer<typeof SearchResults>;
+
+export const Backlink = z.object({ id: z.string().uuid(), path: z.string(), title: z.string(), kind: z.enum(["wiki", "embed", "md", "md-embed"]), anchor: z.string().nullable() });
+export const Backlinks = z.object({ links: z.array(Backlink) });
+export type Backlinks = z.infer<typeof Backlinks>;
+
+export const OutgoingLink = z.object({
+  kind: z.enum(["wiki", "embed", "md", "md-embed"]),
+  target: z.string(),
+  anchor: z.string().nullable(),
+  state: z.enum(["resolved", "unresolved", "ambiguous", "self", "file"]),
+  targetId: z.string().uuid().nullable(),
+});
+export const NoteMeta = z.object({ tags: z.array(z.string()), aliases: z.array(z.string()), links: z.array(OutgoingLink) });
+export type NoteMeta = z.infer<typeof NoteMeta>;

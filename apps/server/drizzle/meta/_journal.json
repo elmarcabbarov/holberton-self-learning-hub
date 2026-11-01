@@ -29,6 +29,20 @@
       "when": 1793561916927,
       "tag": "0003_vault_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793562743972,
+      "tag": "0004_vault_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793562744379,
+      "tag": "0005_notes_fts",
+      "breakpoints": true
     }
   ]
 }

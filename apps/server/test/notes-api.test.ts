@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { NoteConflict, NoteDetail, NoteList, NoteSummary, VaultStatus } from "@hub/contracts";
+import { Backlinks, NoteConflict, NoteDetail, NoteList, NoteMeta, NoteSummary, SearchResults, VaultStatus } from "@hub/contracts";
 import { buildApp } from "../src/app.ts";
 import { loadConfig } from "../src/config.ts";
 import { signedInApp, type TestApp } from "./helpers.ts";
@@ -72,5 +72,23 @@ describe("request limits and validation", () => {
     const res = await t.req({ method: "GET", url: "/api/notes?cursor=a&cursor=b" });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe("validation_failed");
+  });
+});
+
+describe("search, backlinks and meta API", () => {
+  it("finds notes and lists backlinks", async () => {
+    const a = NoteSummary.parse((await t.req({ method: "POST", url: "/api/notes", payload: { path: "fork.md", content: "# fork\nyeni proses yaradır" } })).json());
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "index.md", content: "Bax [[fork]] #linux" } });
+    const hits = SearchResults.parse((await t.req({ method: "GET", url: "/api/notes/search?q=yaradir" })).json());
+    expect(hits.hits.map((h) => h.path)).toEqual(["fork.md"]);
+    const back = Backlinks.parse((await t.req({ method: "GET", url: `/api/notes/${a.id}/backlinks` })).json());
+    expect(back.links.map((l) => l.path)).toEqual(["index.md"]);
+    const idx = NoteList.parse((await t.req({ method: "GET", url: "/api/notes" })).json()).notes.find((n) => n.path === "index.md")!;
+    const meta = NoteMeta.parse((await t.req({ method: "GET", url: `/api/notes/${idx.id}/meta` })).json());
+    expect(meta.tags).toEqual(["linux"]);
+    expect(meta.links[0]).toMatchObject({ target: "fork", state: "resolved", targetId: a.id });
+  });
+  it("validates the search query", async () => {
+    expect((await t.req({ method: "GET", url: "/api/notes/search" })).statusCode).toBe(400);
   });
 });

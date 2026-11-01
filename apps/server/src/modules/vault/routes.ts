@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { CreateNote, IdParam, NoteDetail, NoteList, NoteSummary, SaveNote, VaultStatus } from "@hub/contracts";
+import { Backlinks, CreateNote, IdParam, NoteDetail, NoteList, NoteMeta, NoteSummary, SaveNote, SearchResults, VaultStatus } from "@hub/contracts";
+import type { DatabaseHandle } from "../../lib/db/index.ts";
+import { backlinks, noteMeta, searchNotes } from "./search.ts";
 import { z } from "zod";
 import { PathError } from "../../lib/fs-safe/paths.ts";
 import type { Vault } from "./service.ts";
@@ -16,7 +18,25 @@ const summary = (r: Row) => NoteSummary.parse({
 const err = (reply: FastifyReply, status: number, code: string, messageKey: string, details?: unknown) =>
   reply.code(status).send({ error: { code, messageKey, ...(details === undefined ? {} : { details }) } });
 
-export async function registerVaultRoutes(app: FastifyInstance, vault: Vault): Promise<void> {
+export async function registerVaultRoutes(app: FastifyInstance, vault: Vault, database: DatabaseHandle): Promise<void> {
+  app.get("/api/notes/search", async (req, reply) => {
+    const q = z.object({ q: z.string().max(200) }).safeParse(req.query ?? {});
+    if (!q.success) return err(reply, 400, "validation_failed", "errors.validation");
+    return SearchResults.parse({ hits: searchNotes(database.sqlite, q.data.q) });
+  });
+
+  app.get("/api/notes/:id/backlinks", async (req, reply) => {
+    const p = IdParam.safeParse(req.params);
+    if (!p.success || !vault.get(p.data.id)) return err(reply, 404, "not_found", "errors.notFound");
+    return Backlinks.parse({ links: backlinks(database.db, p.data.id) });
+  });
+
+  app.get("/api/notes/:id/meta", async (req, reply) => {
+    const p = IdParam.safeParse(req.params);
+    if (!p.success || !vault.get(p.data.id)) return err(reply, 404, "not_found", "errors.notFound");
+    return NoteMeta.parse(noteMeta(database.db, p.data.id));
+  });
+
   app.get("/api/notes", async (req, reply) => {
     const q = z.object({ cursor: z.string().max(600).optional() }).safeParse(req.query ?? {});
     if (!q.success) return err(reply, 400, "validation_failed", "errors.validation");

@@ -32,7 +32,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   const releaseLock = await acquireLock(join(config.dataDir, "data", "hub.lock.db")).catch((e) => { database.close(); throw e; });
   app.decorate("database", database);
 
-  const vault = new Vault(database.db, join(config.dataDir, "vault"));
+  const vault = new Vault(database.db, join(config.dataDir, "vault"), database.sqlite);
   await vault.init();
   app.decorate("vault", vault);
   const stopWatching = config.watchVault
@@ -52,7 +52,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await app.register(fastifyCookie);
   await registerAuth(app, database);
   await registerSpaceRoutes(app, database);
-  await registerVaultRoutes(app, vault);
+  await registerVaultRoutes(app, vault, database);
 
   // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.
   app.setErrorHandler((error: { statusCode?: number; code?: string }, req, reply) => {
