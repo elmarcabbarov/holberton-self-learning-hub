@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /** Instance-level key/value facts (instance id, creation time, schema notes). */
 export const appMeta = sqliteTable("app_meta", {
@@ -99,3 +99,38 @@ export const notesFtsMap = sqliteTable("notes_fts_map", {
   rowid: integer("rowid").primaryKey({ autoIncrement: true }),
   noteId: text("note_id").notNull().unique().references(() => notes.id, { onDelete: "cascade" }),
 });
+
+/** Flashcards with FSRS scheduling state (D-055). */
+export const cards = sqliteTable("cards", {
+  id: text("id").primaryKey(),
+  topicId: text("topic_id").references(() => topics.id, { onDelete: "set null" }),
+  noteId: text("note_id").references(() => notes.id, { onDelete: "set null" }),
+  blockAnchor: text("block_anchor"),
+  front: text("front").notNull(),
+  back: text("back").notNull(),
+  origin: text("origin").notNull(), // manual | ai | import
+  suspended: integer("suspended", { mode: "boolean" }).notNull().default(false),
+  due: text("due").notNull(),
+  stability: real("stability").notNull(),
+  difficulty: real("difficulty").notNull(),
+  scheduledDays: integer("scheduled_days").notNull(),
+  learningSteps: integer("learning_steps").notNull(),
+  reps: integer("reps").notNull(),
+  lapses: integer("lapses").notNull(),
+  state: integer("state").notNull(), // ts-fsrs State: 0 New, 1 Learning, 2 Review, 3 Relearning
+  lastReview: text("last_review"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  archivedAt: text("archived_at"),
+}, (t) => [index("cards_due_idx").on(t.due), index("cards_topic_idx").on(t.topicId)]);
+
+/** Append-only review log (D-032, D-056): never rewritten, never cascaded away. */
+export const cardReviews = sqliteTable("card_reviews", {
+  eventId: text("event_id").primaryKey(),
+  cardId: text("card_id").notNull(),
+  rating: integer("rating").notNull(),
+  reviewedAt: text("reviewed_at").notNull(),
+  scheduler: text("scheduler").notNull(),
+  prevState: text("prev_state").notNull(), // JSON snapshot of the card's FSRS state before
+  nextState: text("next_state").notNull(), // JSON snapshot after
+}, (t) => [index("card_reviews_card_idx").on(t.cardId, t.reviewedAt)]);

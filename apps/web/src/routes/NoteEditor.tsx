@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Link2, Tag } from "lucide-react";
 import type { NoteVersion } from "@hub/contracts";
 import { MarkdownEditor } from "../components/MarkdownEditor.tsx";
+import { CardForm } from "../components/CardForm.tsx";
 import { Button } from "../components/ui.tsx";
 import { noteKeys, saveNote, useBacklinks, useCreateNote, useNote, useNoteMeta } from "../features/notes.ts";
 
@@ -25,6 +26,8 @@ export function NoteEditorPage() {
   const [docKey, setDocKey] = useState("");
   const [status, setStatus] = useState<Status>("clean");
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [selection, setSelection] = useState("");
+  const [cardSeed, setCardSeed] = useState<string | null>(null);
   const statusRef = useRef<Status>("clean");
   statusRef.current = status;
   const hasUnsaved = () => ["dirty", "saving", "conflict", "error"].includes(statusRef.current);
@@ -142,6 +145,7 @@ export function NoteEditorPage() {
               placeholder={t("editor.placeholder")}
               onChange={(d) => { doc.current = d; setStatus((s) => (s === "conflict" ? s : "dirty")); }}
               onSave={() => void save()}
+              onSelection={setSelection}
             />
           ) : null}
         </div>
@@ -149,6 +153,17 @@ export function NoteEditorPage() {
       </div>
 
       <aside className="w-full shrink-0 space-y-6 lg:w-72" aria-label={t("editor.sidebar")}>
+        <div>
+          {cardSeed === null ? (
+            <Button onClick={() => setCardSeed(selection)} className="w-full">{selection ? t("cards.fromSelection") : t("cards.makeCard")}</Button>
+          ) : (
+            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+              <h2 className="mb-3 text-[14px] font-medium">{t("cards.makeCard")}</h2>
+              <CardForm key={cardSeed} noteId={noteId} initialBack={cardSeed} onDone={() => setCardSeed(null)} />
+              <Button variant="ghost" className="mt-2" onClick={() => setCardSeed(null)}>{t("common.cancel")}</Button>
+            </div>
+          )}
+        </div>
         <div>
           <h2 className="flex items-center gap-2 text-[14px] font-medium"><Tag size={14} aria-hidden />{t("editor.tags")}</h2>
           {meta.data?.tags.length ? (
