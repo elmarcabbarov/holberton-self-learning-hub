@@ -145,16 +145,21 @@ describe("linked read-only vault", () => {
   });
 
   it("paginates past notes with very long paths", async () => {
+    // The 2 now-missing Shell rows and 197 files sort before the long path, so it is the last row of page one: the cursor.
+    rmSync(join(linked, "Shell"), { recursive: true });
+    mkdirSync(join(linked, "a"));
+    for (let i = 0; i < 197; i++) writeFileSync(join(linked, "a", `${String(i).padStart(3, "0")}.md`), `note ${i}`);
     let deep = linked;
-    for (let i = 0; i < 4; i++) { deep = join(deep, "d".repeat(140)); mkdirSync(deep); }
+    for (let i = 0; i < 4; i++) { deep = join(deep, "b".repeat(140)); mkdirSync(deep); }
     writeFileSync(join(deep, `${"n".repeat(30)}.md`), "deep");
-    for (let i = 0; i < 205; i++) await t.req({ method: "POST", url: "/api/notes", payload: { path: `bulk/${String(i).padStart(3, "0")}.md`, content: "x" } });
-    await t.app.linkedVault!.reconcile();
+    mkdirSync(join(linked, "c"));
+    writeFileSync(join(linked, "c", "after.md"), "after");
+    await t.app.linkedVault!.rebind(); // the old Shell notes are gone on purpose
     const first = NoteList.parse((await t.req({ method: "GET", url: "/api/notes" })).json());
+    expect(first.nextCursor!.length).toBeGreaterThan(600);
     const second = await t.req({ method: "GET", url: `/api/notes?cursor=${encodeURIComponent(first.nextCursor!)}` });
     expect(second.statusCode).toBe(200);
-    const all = [...first.notes, ...NoteList.parse(second.json()).notes];
-    expect(all.some((n) => n.path.endsWith(`${"n".repeat(30)}.md`))).toBe(true);
+    expect(NoteList.parse(second.json()).notes.filter((n) => !n.missing).map((n) => n.path)).toContain("c/after.md");
   });
 
   it("linked notes never block a Hub import to the same path", async () => {
