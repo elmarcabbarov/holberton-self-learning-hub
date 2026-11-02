@@ -3,6 +3,7 @@ import { Card, CardList, CreateCard, IdParam, ReviewQueue, ReviewRequest, Review
 import { z } from "zod";
 import type { DatabaseHandle } from "../../lib/db/index.ts";
 import * as svc from "./service.ts";
+import { exportAnki } from "./anki.ts";
 
 const err = (reply: FastifyReply, status: number, code: string, messageKey: string) => reply.code(status).send({ error: { code, messageKey } });
 const Filter = z.object({ topicId: z.string().uuid().optional(), noteId: z.string().uuid().optional(), spaceId: z.string().uuid().optional() });
@@ -50,6 +51,16 @@ export async function registerCardRoutes(app: FastifyInstance, database: Databas
     const f = Filter.safeParse(req.query ?? {});
     if (!f.success) return err(reply, 400, "validation_failed", "errors.validation");
     return ReviewQueue.parse(svc.reviewQueue(db, f.data.spaceId ? { spaceId: f.data.spaceId } : {}));
+  });
+
+  /** Anki text file of all active cards (or one space's). Plain text; the browser saves it as a download. */
+  app.get("/api/cards/export/anki", async (req, reply) => {
+    const f = Filter.safeParse(req.query ?? {});
+    if (!f.success) return err(reply, 400, "validation_failed", "errors.validation");
+    const { text } = exportAnki(db, f.data.spaceId ? { spaceId: f.data.spaceId } : {});
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    return reply.header("content-type", "text/plain; charset=utf-8")
+      .header("content-disposition", `attachment; filename="hub-cards-anki-${day}.txt"`).send(text);
   });
 
   app.get("/api/review/summary", async () => ReviewSummary.parse(svc.reviewSummary(db)));

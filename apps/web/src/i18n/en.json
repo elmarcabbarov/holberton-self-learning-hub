@@ -350,5 +350,11 @@
     "archivedSummary": "Archived quizzes",
     "archivedLabel": "Archived quizzes",
     "noArchived": "No archived quizzes."
+  },
+  "anki": {
+    "title": "Export cards to Anki",
+    "intro": "A plain text file for Anki 2.1.54 or newer (File → Import). Each space and topic becomes a sub-deck under “Holberton Hub”. Review history stays in the Hub.",
+    "download": "Download for Anki",
+    "downloadSpace": "Export to Anki"
   }
 }

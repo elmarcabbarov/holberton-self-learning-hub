@@ -121,3 +121,32 @@ describe("cards API", () => {
     expect((await t.req({ method: "POST", url: `/api/cards/${card.id}/review`, payload: { rating: 5, eventId: randomUUID() } })).statusCode).toBe(400);
   });
 });
+
+describe("Anki export", () => {
+  let t: TestApp;
+  beforeEach(async () => { t = await signedInApp(); });
+  afterEach(async () => { await t.close(); });
+
+  it("writes a tab-separated Anki file with headers, decks per space::topic and quoted multi-line fields", async () => {
+    const space = Space.parse((await t.req({ method: "POST", url: "/api/spaces", payload: { name: "Linux::əsaslar" } })).json());
+    const topic = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${space.id}/topics`, payload: { name: "fork" } })).json());
+    await t.req({ method: "POST", url: "/api/cards", payload: { topicId: topic.id, front: "fork() nə qaytarır?", back: "Uşaqda 0\nvalideyndə \"PID\"" } });
+    await t.req({ method: "POST", url: "/api/cards", payload: { front: "Loose\tcard", back: "A" } });
+    const archived = Card.parse((await t.req({ method: "POST", url: "/api/cards", payload: { front: "Old", back: "A" } })).json());
+    await t.req({ method: "PATCH", url: `/api/cards/${archived.id}`, payload: { archived: true } });
+
+    const res = await t.req({ method: "GET", url: "/api/cards/export/anki" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toBe("text/plain; charset=utf-8");
+    expect(res.headers["content-disposition"]).toMatch(/^attachment; filename="hub-cards-anki-\d{8}\.txt"$/);
+    expect(res.body).toBe([
+      "#separator:Tab", "#html:false", "#notetype:Basic", "#deck column:3", "#tags column:4", "#columns:Front\tBack\tDeck\tTags",
+      "fork() nə qaytarır?\t\"Uşaqda 0\nvalideyndə \"\"PID\"\"\"\tHolberton Hub::Linux:əsaslar::fork\tholberton-hub",
+      "\"Loose\tcard\"\tA\tHolberton Hub\tholberton-hub",
+      "",
+    ].join("\n"));
+
+    const scoped = await t.req({ method: "GET", url: `/api/cards/export/anki?spaceId=${space.id}` });
+    expect(scoped.body.split("\n").filter((l) => !l.startsWith("#") && l)).toHaveLength(2); // one card, two physical lines
+  });
+});

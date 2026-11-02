@@ -49,6 +49,11 @@ export function Settings() {
         />
       </div>
       <BackupPanel />
+      <div className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
+        <h2 className="text-[20px] font-medium">{t("anki.title")}</h2>
+        <p className="mt-1 max-w-prose text-[14px] text-muted">{t("anki.intro")}</p>
+        <a href="/api/cards/export/anki" download className="mt-5 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("anki.download")}</a>
+      </div>
     </section>
   );
 }
