@@ -22,20 +22,21 @@ function snippet(raw: string, q: string, width = 160): string {
   return `${start > 0 ? "…" : ""}${raw.slice(start, start + width)}${start + width < raw.length ? "…" : ""}`;
 }
 
-export function searchNotes(sqlite: Sqlite, q: string, limit = 50) {
+/** Full-text search over present notes of the given vaults (a linked vault that is not configured is left out). */
+export function searchNotes(sqlite: Sqlite, q: string, vaults: string[] = ["hub"], limit = 50) {
   const match = ftsQuery(q);
   if (!match) return [];
   const rows = sqlite.prepare(
-    `SELECT n.id, n.path, f.raw_title AS title, f.raw_body AS body
+    `SELECT n.id, n.vault, n.path, f.raw_title AS title, f.raw_body AS body
        FROM notes_fts f JOIN notes_fts_map m ON m.rowid = f.rowid JOIN notes n ON n.id = m.note_id
-      WHERE notes_fts MATCH ? AND n.missing_since IS NULL
+      WHERE notes_fts MATCH ? AND n.missing_since IS NULL AND n.vault IN (SELECT value FROM json_each(?))
       ORDER BY bm25(notes_fts, 5.0, 1.0) LIMIT ?`,
-  ).all(match, limit) as { id: string; path: string; title: string; body: string }[];
-  return rows.map((r) => ({ id: r.id, path: r.path, title: r.title, snippet: snippet(r.body, q) }));
+  ).all(match, JSON.stringify(vaults), limit) as { id: string; vault: string; path: string; title: string; body: string }[];
+  return rows.map((r) => ({ id: r.id, vault: r.vault, path: r.path, title: r.title, snippet: snippet(r.body, q) }));
 }
 
 export function backlinks(db: Db, noteId: string) {
-  return db.select({ id: notes.id, path: notes.path, title: notes.title, kind: noteLinks.kind, anchor: noteLinks.anchor })
+  return db.select({ id: notes.id, vault: notes.vault, path: notes.path, title: notes.title, kind: noteLinks.kind, anchor: noteLinks.anchor })
     .from(noteLinks).innerJoin(notes, eq(notes.id, noteLinks.fromNoteId))
     .where(and(eq(noteLinks.targetNoteId, noteId), eq(noteLinks.state, "resolved"), isNull(notes.missingSince)))
     .orderBy(notes.path).all();

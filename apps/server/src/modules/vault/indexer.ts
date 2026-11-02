@@ -1,5 +1,5 @@
 import { posix } from "node:path";
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "../../lib/db/index.ts";
 import { noteAliases, noteLinks, notes, notesFtsMap, noteTags } from "../../lib/db/schema.ts";
 import { foldKey } from "../../lib/fs-safe/paths.ts";
@@ -45,8 +45,10 @@ const stripMd = (p: string) => p.replace(/\.md$/i, "");
  * Resolves every link against present notes. Path-qualified targets match the full path;
  * bare names match a unique file name or alias; several candidates → ambiguous (never guessed).
  */
-export function resolveLinks(db: Db): void {
-  const present = db.select({ id: notes.id, path: notes.path }).from(notes).where(isNull(notes.missingSince)).all();
+export function resolveLinks(db: Db, vault: string = "hub"): void {
+  // Links are vault-local, as in Obsidian: sources, targets and aliases all come from one vault (D-062).
+  const present = db.select({ id: notes.id, path: notes.path }).from(notes).where(and(isNull(notes.missingSince), eq(notes.vault, vault))).all();
+  const own = new Set(db.select({ id: notes.id }).from(notes).where(eq(notes.vault, vault)).all().map((r) => r.id));
   const presentIds = new Set(present.map((n) => n.id));
   const byPath = new Map<string, string[]>();
   const byName = new Map<string, string[]>();
@@ -58,7 +60,7 @@ export function resolveLinks(db: Db): void {
   for (const a of db.select().from(noteAliases).all()) if (presentIds.has(a.noteId)) add(byName, a.aliasKey, a.noteId);
   const pathOf = new Map(present.map((n) => [n.id, n.path]));
 
-  const links = db.select().from(noteLinks).all();
+  const links = db.select().from(noteLinks).all().filter((l) => own.has(l.fromNoteId));
   db.transaction((tx) => {
     for (const l of links) {
       let state: string; let target: string | null = null;

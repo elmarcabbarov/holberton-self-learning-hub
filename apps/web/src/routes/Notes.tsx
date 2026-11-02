@@ -57,7 +57,7 @@ export function Notes() {
             {search.data?.hits.map((h) => (
               <li key={h.id}>
                 <Link to="/notes/$noteId" params={{ noteId: h.id }} className="block p-5 hover:bg-surface-2">
-                  <span className="block font-medium">{h.title}</span>
+                  <span className="block font-medium">{h.title}{h.vault === "linked" ? <span className="ml-2 rounded-[3px] border border-line px-1.5 text-[12px] font-normal text-muted">{t("linkedVault.badge")}</span> : null}</span>
                   <span className="mt-0.5 block text-[13px] text-muted">{h.path}</span>
                   <span className="mt-2 block text-[14px] text-muted">{h.snippet}</span>
                 </Link>
@@ -74,6 +74,7 @@ export function Notes() {
                   <Link to="/notes/$noteId" params={{ noteId: n.id }} className="flex items-center gap-3 px-5 py-3.5 hover:bg-surface-2">
                     <FileText size={16} aria-hidden className="shrink-0 text-muted" />
                     <span className="min-w-0 flex-1 truncate">{n.title}</span>
+                    {n.vault === "linked" ? <span className="shrink-0 rounded-[3px] border border-line px-1.5 text-[12px] text-muted">{t("linkedVault.badge")}</span> : null}
                     <span className="hidden truncate text-[13px] text-muted sm:block">{n.path}</span>
                   </Link>
                 </li>

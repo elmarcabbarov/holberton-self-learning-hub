@@ -127,7 +127,7 @@ export function NoteEditorPage() {
           </div>
         </div>
 
-        {readOnly ? <p role="note" className="mt-4 rounded-[var(--radius-control)] border border-line bg-surface p-3 text-[14px]">{t("notes.readOnly")}</p> : null}
+        {readOnly ? <p role="note" className="mt-4 rounded-[var(--radius-control)] border border-line bg-surface p-3 text-[14px]">{t(n.readOnlyReason === "linked" ? "notes.readOnlyLinked" : "notes.readOnly")}</p> : null}
         {status === "conflict" ? (
           <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] border border-brand bg-surface p-3 text-[14px]">
             <span className="flex-1">{t("editor.conflict")}</span>

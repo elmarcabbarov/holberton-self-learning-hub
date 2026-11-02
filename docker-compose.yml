@@ -9,9 +9,11 @@ services:
       # Port the browser uses; needed for the Host check and printed links (D-046).
       HUB_PUBLIC_PORT: ${HUB_PORT:-3000}
       # HUB_IMPORT_DIR: /import
+      # HUB_LINKED_VAULT: /linked
     volumes:
       - ${HUB_DATA:-./.data}:/data
-      # Optional read-only linked vault (OBSIDIAN_STRATEGY §7). Uncomment and set LINKED_VAULT in .env.
+      # Optional read-only linked vault (D-062). Uncomment this line and HUB_LINKED_VAULT above, and set LINKED_VAULT in .env.
+      # A missing host folder makes Docker create an empty one; the Hub then reports the vault as empty and changes nothing.
       # - ${LINKED_VAULT}:/linked:ro
       # Optional import folder (D-061): its subfolders can be copied into the vault from Settings.
       # Uncomment both lines and set IMPORT_DIR in .env.

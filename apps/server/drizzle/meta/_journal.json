@@ -64,6 +64,13 @@
       "when": 1793655439551,
       "tag": "0008_vault_import",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793657108138,
+      "tag": "0009_linked_vault",
+      "breakpoints": true
     }
   ]
 }

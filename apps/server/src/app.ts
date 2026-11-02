@@ -14,7 +14,8 @@ import { registerBackupRoutes } from "./modules/backup/routes.ts";
 import { registerImportRoutes } from "./modules/import/routes.ts";
 import { registerQuizRoutes } from "./modules/quizzes/routes.ts";
 import { restorePending } from "./modules/backup/restore.ts";
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
 import { acquireLock } from "./lib/lockfile.ts";
 import { Vault } from "./modules/vault/service.ts";
 import { registerVaultRoutes } from "./modules/vault/routes.ts";
@@ -26,6 +27,7 @@ declare module "fastify" {
   interface FastifyInstance {
     database: DatabaseHandle;
     vault: Vault;
+    linkedVault: Vault | null;
   }
 }
 
@@ -35,6 +37,11 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
   });
 
+  // The linked vault is read-only and must never overlap a folder the Hub writes to (D-062).
+  // Checked before anything opens, creates or cleans files under the data folder.
+  if (config.linkedVault && await overlaps(config.linkedVault, config.dataDir)) {
+    throw new Error("HUB_LINKED_VAULT must not overlap the Hub data folder.");
+  }
   if (await restorePending(config.dataDir)) {
     throw new Error("A restore did not finish. Run the restore command again before starting the Hub.");
   }
@@ -47,14 +54,24 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   app.decorate("vault", vault);
   const importer = new VaultImporter(database.db, vault, config.dataDir, config.importDir);
   await importer.init();
-  const stopWatching = config.watchVault
-    ? startWatching(vault, { polling: config.vaultPolling, log: (m) => app.log.warn(m) })
-    : async () => undefined;
+  let linked: Vault | null = null;
+  if (config.linkedVault) {
+    linked = new Vault(database.db, config.linkedVault, database.sqlite, { name: "linked", readOnly: true });
+    await linked.init();
+  }
+  app.decorate("linkedVault", linked);
+  const watch = (v: Vault) => (config.watchVault
+    ? startWatching(v, { polling: config.vaultPolling, log: (m) => app.log.warn(`${v.name} vault: ${m}`) })
+    : async () => undefined);
+  const stopHub = watch(vault);
+  const stopLinked = linked ? watch(linked) : async () => undefined;
+  const stopWatching = async () => { await stopHub(); await stopLinked(); };
 
   // Shutdown order: watcher → pending vault work → database → lock.
   app.addHook("onClose", async () => {
     await stopWatching();
     await vault.idle();
+    await linked?.idle();
     database.close();
     await releaseLock();
   });
@@ -78,7 +95,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerQuizRoutes(app, database);
   await registerImportRoutes(app, database, vault);
   await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
-  await registerVaultRoutes(app, vault, database);
+  await registerVaultRoutes(app, vault, database, linked);
   await registerVaultImportRoutes(app, importer);
 
   app.get("/api/health", async (_req, reply) => {
@@ -104,4 +121,13 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   }
 
   return app;
+}
+
+/** True when one path contains the other, compared after resolving symlinks where the path exists. */
+async function overlaps(a: string, b: string): Promise<boolean> {
+  const real = async (p: string) => realpath(p).catch(() => resolve(p));
+  const [x, y] = [await real(a), await real(b)];
+  // By path component: a child named `..hub` is inside; only `..` itself or `../…` is outside.
+  const inside = (p: string, q: string) => { const r = relative(q, p); return r === "" || (r !== ".." && !r.startsWith(`..${sep}`) && !isAbsolute(r)); };
+  return inside(x, y) || inside(y, x);
 }

@@ -69,3 +69,7 @@ export function pingDatabase(sqlite: Database.Database): boolean {
 export async function backupDatabase(sqlite: Database.Database, destination: string): Promise<void> {
   await sqlite.backup(destination);
 }
+
+export function setMeta(db: Db, key: string, value: string): void {
+  db.insert(schema.appMeta).values({ key, value }).onConflictDoUpdate({ target: schema.appMeta.key, set: { value } }).run();
+}

@@ -23,6 +23,11 @@ docker compose exec hub node apps/server/src/cli.ts token
 
 The container listens only on `127.0.0.1` of your machine. Your data lives in `./.data` (change `HUB_DATA` in `.env`); notes are plain files in `./.data/vault`.
 
+### Use your existing Obsidian vault
+
+- **Copy notes in:** Settings → Import notes takes a zip of Markdown files (for example an exported vault). You see a preview first; existing notes are never overwritten.
+- **Link a vault read-only:** set `LINKED_VAULT=/path/to/your/vault` in `.env` and uncomment the `HUB_LINKED_VAULT` and `/linked:ro` lines in `docker-compose.yml`. Its notes show up in Notes and search and can back your cards; the Hub never changes them, so keep editing in Obsidian.
+
 ### Restore a backup
 Stop the Hub, then restore into an **empty** data folder:
 

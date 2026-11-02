@@ -48,7 +48,15 @@ export async function readStable(abs: string): Promise<ReadResult> {
       const before = await fh.stat();
       if (!before.isFile()) throw new PathError("not_regular_file");
       if (before.size > MAX_NOTE_BYTES) throw new PathError("too_large");
-      const bytes = await fh.readFile();
+      // Bounded: a file that grows while being read can never make us hold more than the limit + 1 byte.
+      const buf = Buffer.alloc(Math.min(before.size, MAX_NOTE_BYTES) + 1);
+      let n = 0;
+      for (;;) {
+        const { bytesRead } = await fh.read(buf, n, buf.length - n, n);
+        if (bytesRead === 0 || (n += bytesRead) === buf.length) break;
+      }
+      if (n > MAX_NOTE_BYTES) throw new PathError("too_large");
+      const bytes = buf.subarray(0, n);
       const after = await fh.stat();
       if (after.size === before.size && after.mtimeMs === before.mtimeMs && bytes.length === after.size) {
         return { bytes, sha256: sha256(bytes), size: bytes.length, mtimeMs: after.mtimeMs };

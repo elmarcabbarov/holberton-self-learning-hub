@@ -99,7 +99,9 @@
     "collision": "Başqa bir qeyd yalnız hərf registri və ya diakritik işarələrlə fərqlənir. Başqa ad seç.",
     "invalidPath": "Bu fayl adı və ya qovluq icazəli deyil.",
     "conflict": "Bu qeyd açdığından sonra diskdə dəyişib.",
-    "readOnly": "Hub bu faylı təhlükəsiz redaktə edə bilmir (dəstəklənməyən encoding və ya qarışıq sətir sonları)."
+    "readOnly": "Hub bu faylı təhlükəsiz redaktə edə bilmir (dəstəklənməyən encoding və ya qarışıq sətir sonları).",
+    "readOnlyLinked": "Bu qeyd qoşulmuş vault-dadır, Hub onu yalnız oxuyur. Obsidian-da redaktə et; Hub dəyişikliyi özü götürəcək.",
+    "vaultUnavailable": "Bu qeydin olduğu vault hazırda əlçatan deyil."
   },
   "notesPage": {
     "title": "Qeydlər",
@@ -407,5 +409,19 @@
       "exists": "{count, plural, one {Artıq qeyd olan # yer} other {Artıq qeyd olan # yer}}",
       "missing_note": "{count, plural, one {Silinmiş qeydin kartları və tarixçəsi qalan # yer} other {Silinmiş qeydlərin kartları və tarixçəsi qalan # yer}}"
     }
+  },
+  "linkedVault": {
+    "badge": "Qoşulmuş",
+    "title": "Qoşulmuş vault",
+    "intro": "Hub-un oxuduğu, amma heç vaxt dəyişmədiyi mövcud vault. Onun qeydləri Notes-da və axtarışda görünür, onlardan kart yarada bilərsən. Redaktəni Obsidian-da et.",
+    "notes": "{count, plural, one {# qeyd indeksləndi.} other {# qeyd indeksləndi.}}",
+    "state": {
+      "ready": "Aktualdır.",
+      "unavailable": "Qovluq hazırda əlçatan deyil (disk və ya mount qoşuludurmu?). Qeydlər, kartlar və tarixçə saxlanılır.",
+      "replaced": "Bu qeydlərin gəldiyi qovluq əvəzinə başqa qovluq qoşulub. Heç nə dəyişdirilmədi. Vault-u qəsdən köçürmüsənsə, aşağıda təsdiqlə.",
+      "empty_unconfirmed": "Qovluqda Markdown faylı yoxdur. Mount itmiş ola biləcəyi üçün heç nə silinmiş sayılmadı. Vault-u qəsdən boşaltmısansa, aşağıda təsdiqlə."
+    },
+    "rebind": "Bəli, bu qovluğu istifadə et",
+    "rebindHelp": "Eyni yol qalan qeydlər kartlarını saxlayır; olmayan qeydlər itmiş kimi işarələnir."
   }
 }
