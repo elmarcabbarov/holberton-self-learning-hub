@@ -466,5 +466,28 @@
     "spaceIntro": "Notes linked to this space's topics. Link a note from the note's sidebar; the file itself is not changed.",
     "spaceListLabel": "Notes linked to this space",
     "spaceEmpty": "No notes linked yet."
+  },
+  "sessions": {
+    "heading": "Study session",
+    "noObjective": "No objective set",
+    "running": "Started at {time} · {minutes, plural, one {# minute} other {# minutes}}",
+    "stop": "Stop session",
+    "reflectionForm": "Reflection",
+    "reflectIntro": "Session finished: {objective}. Three short notes, all optional.",
+    "learned": "What I learned",
+    "stuck": "Where I got stuck",
+    "next": "What I'll do next",
+    "saveReflection": "Save reflection",
+    "skip": "Skip",
+    "lastNext": "Last time you planned:",
+    "startForm": "Start a study session",
+    "objective": "What do you want to do? (optional)",
+    "objectivePlaceholder": "e.g. understand how fork() copies a process",
+    "space": "Space (optional)",
+    "noSpace": "No space",
+    "start": "Start session",
+    "alreadyOpen": "A session is already running.",
+    "stillOpen": "Stop the session before reflecting.",
+    "badRef": "That space or task does not exist."
   }
 }

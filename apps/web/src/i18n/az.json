@@ -466,5 +466,28 @@
     "spaceIntro": "Bu sahənin mövzularına bağlı qeydlər. Qeydi onun yan panelindən bağla; faylın özü dəyişmir.",
     "spaceListLabel": "Bu sahəyə bağlı qeydlər",
     "spaceEmpty": "Hələ bağlı qeyd yoxdur."
+  },
+  "sessions": {
+    "heading": "Öyrənmə sessiyası",
+    "noObjective": "Məqsəd yazılmayıb",
+    "running": "{time}-da başladı · {minutes, plural, one {# dəqiqə} other {# dəqiqə}}",
+    "stop": "Sessiyanı bitir",
+    "reflectionForm": "Refleksiya",
+    "reflectIntro": "Sessiya bitdi: {objective}. Üç qısa qeyd, hamısı istəyə bağlıdır.",
+    "learned": "Nə öyrəndim",
+    "stuck": "Harada ilişdim",
+    "next": "Növbəti addımım",
+    "saveReflection": "Refleksiyanı saxla",
+    "skip": "Ötür",
+    "lastNext": "Keçən dəfə planladığın:",
+    "startForm": "Öyrənmə sessiyası başlat",
+    "objective": "Nə etmək istəyirsən? (istəyə bağlı)",
+    "objectivePlaceholder": "məs. fork()-un prosesi necə kopyaladığını anlamaq",
+    "space": "Sahə (istəyə bağlı)",
+    "noSpace": "Sahəsiz",
+    "start": "Sessiyanı başlat",
+    "alreadyOpen": "Artıq açıq sessiya var.",
+    "stillOpen": "Refleksiyadan əvvəl sessiyanı bitir.",
+    "badRef": "Belə sahə və ya tapşırıq yoxdur."
   }
 }
