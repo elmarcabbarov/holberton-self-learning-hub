@@ -39,7 +39,7 @@ export function redeemBootstrapToken(db: Db, token: string, now = Date.now()): s
       absoluteExpiresAt: iso(now + SESSION_ABSOLUTE_MS),
     }).run();
     return sessionId;
-  });
+  }, { behavior: "immediate" });
 }
 
 export type SessionCheck = { valid: false } | { valid: true; renewedMaxAgeSec?: number };

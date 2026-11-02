@@ -29,7 +29,7 @@ export function indexNote(db: Db, sqlite: Sqlite, noteId: string, path: string, 
     sqlite.prepare("DELETE FROM notes_fts WHERE rowid = ?").run(map.rowid);
     sqlite.prepare("INSERT INTO notes_fts(rowid, title, body, raw_title, raw_body) VALUES (?, ?, ?, ?, ?)")
       .run(map.rowid, searchFold(parsed.title), searchFold(parsed.body), parsed.title, parsed.body);
-  });
+  }, { behavior: "immediate" });
   return parsed;
 }
 
@@ -83,5 +83,5 @@ export function resolveLinks(db: Db): void {
         tx.update(noteLinks).set({ state, targetNoteId: target }).where(eq(noteLinks.id, l.id)).run();
       }
     }
-  });
+  }, { behavior: "immediate" });
 }
