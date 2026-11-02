@@ -132,6 +132,7 @@ describe("Anki export", () => {
     const topic = Topic.parse((await t.req({ method: "POST", url: `/api/spaces/${space.id}/topics`, payload: { name: "fork" } })).json());
     await t.req({ method: "POST", url: "/api/cards", payload: { topicId: topic.id, front: "fork() nə qaytarır?", back: "Uşaqda 0\nvalideyndə \"PID\"" } });
     await t.req({ method: "POST", url: "/api/cards", payload: { front: "Loose\tcard", back: "A" } });
+    await t.req({ method: "POST", url: "/api/cards", payload: { front: "#include <stdio.h> nə verir?", back: "printf elanı" } });
     const archived = Card.parse((await t.req({ method: "POST", url: "/api/cards", payload: { front: "Old", back: "A" } })).json());
     await t.req({ method: "PATCH", url: `/api/cards/${archived.id}`, payload: { archived: true } });
 
@@ -140,9 +141,10 @@ describe("Anki export", () => {
     expect(res.headers["content-type"]).toBe("text/plain; charset=utf-8");
     expect(res.headers["content-disposition"]).toMatch(/^attachment; filename="hub-cards-anki-\d{8}\.txt"$/);
     expect(res.body).toBe([
-      "#separator:Tab", "#html:false", "#notetype:Basic", "#deck column:3", "#tags column:4", "#columns:Front\tBack\tDeck\tTags",
+      "#separator:Tab", "#html:false", "#notetype:Basic", "#deck column:3", "#tags column:4",
       "fork() nə qaytarır?\t\"Uşaqda 0\nvalideyndə \"\"PID\"\"\"\tHolberton Hub::Linux:əsaslar::fork\tholberton-hub",
       "\"Loose\tcard\"\tA\tHolberton Hub\tholberton-hub",
+      "\"#include <stdio.h> nə verir?\"\tprintf elanı\tHolberton Hub\tholberton-hub",
       "",
     ].join("\n"));
 

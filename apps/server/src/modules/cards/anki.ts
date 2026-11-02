@@ -6,12 +6,13 @@ import { cards, spaces, topics } from "../../lib/db/schema.ts";
  * Anki text import (2.1.54+ file headers, https://docs.ankiweb.net/importing/text-files.html).
  * Tab-separated, plain text (no HTML), Basic note type. Deck = "Holberton Hub::<space>::<topic>".
  */
-const HEADER = ["#separator:Tab", "#html:false", "#notetype:Basic", "#deck column:3", "#tags column:4", "#columns:Front\tBack\tDeck\tTags"];
+const HEADER = ["#separator:Tab", "#html:false", "#notetype:Basic", "#deck column:3", "#tags column:4"];
+// No "#columns": Anki maps named columns to field names, which are translated in localized collections; positions always work.
 export const ROOT_DECK = "Holberton Hub";
 
-/** A field is quoted when it holds a tab, newline or quote; quotes are doubled. */
+/** A field is quoted when it holds a tab, newline or quote, or starts with "#" (an unquoted row starting with "#" is a comment to Anki). */
 export function ankiField(v: string): string {
-  return /[\t\r\n"]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  return /[\t\r\n"]/.test(v) || v.startsWith("#") ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
 /** "::" makes sub-decks in Anki, so it may not appear inside one name. */
