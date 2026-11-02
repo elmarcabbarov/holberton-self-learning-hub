@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { SessionOverview, StudySession } from "@hub/contracts";
-import { apiJson } from "../api.ts";
+import { ApiError, apiJson } from "../api.ts";
 import { useSpaces } from "../features/spaces.ts";
 import { Button, Card, TextInput } from "./ui.tsx";
 
@@ -28,20 +28,41 @@ export function SessionCard() {
   const spaces = useSpaces();
   const [objective, setObjective] = useState("");
   const [spaceId, setSpaceId] = useState("");
-  const [reflection, setReflection] = useState({ learned: "", stuck: "", next: "" });
+  // The draft belongs to one session: a different "last" session (another tab) starts with an empty draft.
+  const [draft, setDraft] = useState({ id: "", learned: "", stuck: "", next: "" });
+  // Mutations stay pending until the overview is fresh, so the old form can never be submitted again meanwhile.
   const done = () => qc.invalidateQueries({ queryKey: KEY });
   const opts = { scope: { id: "study-session" }, onSuccess: done };
 
-  const start = useMutation({ ...opts, mutationFn: () => apiJson("/api/sessions", StudySession, { method: "POST", body: { objective, spaceId: spaceId || null } }), onSuccess: () => { setObjective(""); void done(); } });
+  const current = data.data?.current ?? null;
+  const last = data.data?.last ?? null;
+  // A space archived since it was picked is no longer offered and is not sent.
+  const space = spaces.data?.spaces.some((x) => x.id === spaceId) ? spaceId : "";
+
+  const start = useMutation({
+    ...opts,
+    mutationFn: () => apiJson("/api/sessions", StudySession, { method: "POST", body: { objective, spaceId: space || null } }),
+    onSuccess: async () => { setObjective(""); await done(); },
+    // Another tab started one: show it.
+    onError: (e) => { if (e instanceof ApiError && e.status === 409) void done(); },
+  });
   const stop = useMutation({ ...opts, mutationFn: (id: string) => apiJson(`/api/sessions/${id}/stop`, StudySession, { method: "POST" }) });
   const reflect = useMutation({
     ...opts,
-    mutationFn: ({ id, body }: { id: string; body: typeof reflection }) => apiJson(`/api/sessions/${id}/reflection`, StudySession, { method: "PUT", body }),
-    onSuccess: () => { setReflection({ learned: "", stuck: "", next: "" }); void done(); },
+    mutationFn: ({ id, body }: { id: string; body: { learned: string; stuck: string; next: string } }) => apiJson(`/api/sessions/${id}/reflection`, StudySession, { method: "PUT", body }),
+    onSuccess: async () => { await done(); setDraft({ id: "", learned: "", stuck: "", next: "" }); },
   });
+  const reflection = last && draft.id === last.id ? draft : { id: last?.id ?? "", learned: "", stuck: "", next: "" };
 
-  const current = data.data?.current ?? null;
-  const last = data.data?.last ?? null;
+  // Keyboard users stay in the flow: when the card changes phase, focus moves to its heading.
+  const phase = current ? "running" : last && !last.reflectedAt ? "reflect" : "idle";
+  const heading = useRef<HTMLHeadingElement>(null);
+  const prevPhase = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data.isSuccess) return;
+    if (prevPhase.current !== null && prevPhase.current !== phase) heading.current?.focus();
+    prevPhase.current = phase;
+  }, [phase, data.isSuccess]);
   const minutes = useMinutesSince(current?.startedAt ?? null);
   const failed = start.isError || stop.isError || reflect.isError;
   if (!data.isSuccess) return null;
@@ -59,7 +80,7 @@ export function SessionCard() {
       </>
     );
   } else if (last && !last.reflectedAt) {
-    const submit = (e: FormEvent) => { e.preventDefault(); reflect.mutate({ id: last.id, body: reflection }); };
+    const submit = (e: FormEvent) => { e.preventDefault(); reflect.mutate({ id: last.id, body: { learned: reflection.learned, stuck: reflection.stuck, next: reflection.next } }); };
     body = (
       <form aria-label={t("sessions.reflectionForm")} onSubmit={submit} className="mt-2">
         <p className="text-[14px] text-muted">{t("sessions.reflectIntro", { objective: last.objective || t("sessions.noObjective") })}</p>
@@ -67,7 +88,7 @@ export function SessionCard() {
           {(["learned", "stuck", "next"] as const).map((k) => (
             <label key={k} className="flex flex-col gap-1.5">
               <span className="text-[13px] text-muted">{t(`sessions.${k}`)}</span>
-              <textarea className={textareaClass} value={reflection[k]} maxLength={2000} onChange={(e) => setReflection({ ...reflection, [k]: e.target.value })} />
+              <textarea className={textareaClass} value={reflection[k]} maxLength={2000} onChange={(e) => setDraft({ ...reflection, [k]: e.target.value })} />
             </label>
           ))}
         </div>
@@ -87,7 +108,7 @@ export function SessionCard() {
           {spaces.data && spaces.data.spaces.length > 0 ? (
             <label className="flex flex-col gap-1.5">
               <span className="text-[13px] text-muted">{t("sessions.space")}</span>
-              <select value={spaceId} onChange={(e) => setSpaceId(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
+              <select value={space} onChange={(e) => setSpaceId(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
                 <option value="">{t("sessions.noSpace")}</option>
                 {spaces.data.spaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -101,7 +122,7 @@ export function SessionCard() {
 
   return (
     <Card className="mt-8">
-      <h2 className="text-[14px] font-medium text-muted">{t("sessions.heading")}</h2>
+      <h2 ref={heading} tabIndex={-1} className="text-[14px] font-medium text-muted outline-none focus-visible:outline-2 focus-visible:outline-focus">{t("sessions.heading")}</h2>
       {body}
       {failed ? <p role="alert" className="mt-3 text-[14px]">{t("errors.saveFailed")}</p> : null}
     </Card>
