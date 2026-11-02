@@ -119,7 +119,10 @@ export function SpaceDetailPage() {
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-[20px] font-medium">{t("cards.title")}</h2>
-          <Link to="/review" search={{ space: spaceId }} className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("cards.startReview")}</Link>
+          <div className="flex gap-4">
+            <a href={`/api/cards/export/anki?spaceId=${spaceId}`} download className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("anki.downloadSpace")}</a>
+            <Link to="/review" search={{ space: spaceId }} className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("cards.startReview")}</Link>
+          </div>
         </div>
         <p className="mt-1 text-[14px] text-muted">{t("cards.intro")}</p>
         <div className="mt-5"><CardForm spaceId={spaceId} /></div>

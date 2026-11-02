@@ -350,5 +350,11 @@
     "archivedSummary": "Arxivlənmiş quiz-lər",
     "archivedLabel": "Arxivlənmiş quiz-lər",
     "noArchived": "Arxivlənmiş quiz yoxdur."
+  },
+  "anki": {
+    "title": "Kartları Anki-yə export et",
+    "intro": "Anki 2.1.54 və ya daha yeni versiya üçün mətn faylı (File → Import). Hər sahə və mövzu “Holberton Hub” altında alt-deck olur. Review tarixçəsi Hub-da qalır.",
+    "download": "Anki üçün yüklə",
+    "downloadSpace": "Anki-yə export"
   }
 }
