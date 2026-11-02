@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
-import { ImportSources, VaultImport, type ImportSkipReason } from "@hub/contracts";
+import { ImportSources, VaultImport, VaultImportList, type ImportSkipReason } from "@hub/contracts";
 import { z } from "zod";
 import { ApiError, apiJson, apiUpload } from "../api.ts";
 import { Button, TextInput } from "./ui.tsx";
@@ -17,7 +17,11 @@ export function VaultImportPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [folder, setFolder] = useState("");
   const [prefix, setPrefix] = useState("");
-  const [current, setCurrent] = useState<VaultImport | null>(null);
+  const [picked, setPicked] = useState<VaultImport | null>(null);
+  // Imports still waiting for a decision survive navigation and restarts: the server lists them.
+  const open = useQuery({ queryKey: ["vault-imports"], queryFn: () => apiJson("/api/vault/imports", VaultImportList) });
+  const current = picked ?? open.data?.imports[0] ?? null;
+  const setCurrent = (imp: VaultImport | null) => { setPicked(imp); void qc.invalidateQueries({ queryKey: ["vault-imports"] }); };
 
   const preview = useMutation({
     mutationFn: (src: Source) => {
@@ -31,13 +35,15 @@ export function VaultImportPanel() {
   const commit = useMutation({
     mutationFn: (id: string) => apiJson(`/api/vault/imports/${id}/commit`, VaultImport, { method: "POST" }),
     onSuccess: (imp) => { setCurrent(imp); void qc.invalidateQueries({ queryKey: ["notes"] }); },
+    // A failed commit is interrupted on the server: show that state, so it can be resumed or discarded.
+    onError: (_e, id) => { void apiJson(`/api/vault/imports/${id}`, VaultImport).then(setPicked, () => undefined); },
   });
   const cancel = useMutation({
     mutationFn: (id: string) => apiJson(`/api/vault/imports/${id}`, z.null(), { method: "DELETE" }),
-    onSettled: () => setCurrent(null),
+    onSuccess: () => setCurrent(null),
   });
 
-  const error = preview.error ?? commit.error;
+  const error = preview.error ?? commit.error ?? cancel.error;
   const errorText = error instanceof ApiError && error.messageKey.startsWith("vaultImport.") ? t(error.messageKey) : error ? t("vaultImport.failed") : null;
 
   const submit = (e: FormEvent, src: Source | null) => {
@@ -128,7 +134,7 @@ function ImportView({ imp, committing, onCommit, onCancel }: { imp: VaultImport;
         <Button variant="primary" onClick={onCommit} disabled={committing || imp.counts.import === 0}>
           {committing ? t("vaultImport.importing") : t("vaultImport.commit", { count: imp.counts.import })}
         </Button>
-        {imp.state === "preview" ? <Button variant="ghost" onClick={onCancel} disabled={committing}>{t("vaultImport.cancel")}</Button> : null}
+        {imp.state === "preview" || imp.state === "interrupted" ? <Button variant="ghost" onClick={onCancel} disabled={committing}>{t("vaultImport.cancel")}</Button> : null}
       </div>
     </div>
   );

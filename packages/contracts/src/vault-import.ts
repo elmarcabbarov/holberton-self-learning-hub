@@ -73,3 +73,6 @@ export const ImportSources = z.object({
   folders: z.array(z.string()),
 });
 export type ImportSources = z.infer<typeof ImportSources>;
+
+export const VaultImportList = z.object({ imports: z.array(VaultImport) });
+export type VaultImportList = z.infer<typeof VaultImportList>;

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, rm, unlink } from "node:fs/promises";
+import { constants } from "node:fs";
+import { mkdir, open, readdir, readFile, rm, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { and, eq, inArray } from "drizzle-orm";
 import { IMPORT_LIMITS, type ImportEntry, type ImportOutcome, type VaultImport } from "@hub/contracts";
@@ -31,6 +32,8 @@ export class VaultImporter {
   private readonly vault: Vault;
   private readonly stagingRoot: string;
   readonly importDir: string | null;
+  /** Previews being staged right now; counted with the open ones so concurrent requests cannot pass the limit. */
+  private staging = 0;
 
   constructor(db: Db, vault: Vault, dataDir: string, importDir: string | null) {
     this.db = db;
@@ -79,15 +82,18 @@ export class VaultImporter {
       throw e;
     }
     this.expireOld();
-    const pending = this.db.select({ id: vaultImports.id }).from(vaultImports).where(inArray(vaultImports.state, OPEN_STATES)).all();
-    if (pending.length >= IMPORT_LIMITS.pending) throw new ImportError("too_many_pending", 409);
+    const open = this.db.select({ id: vaultImports.id }).from(vaultImports).where(inArray(vaultImports.state, [...OPEN_STATES, "committing"])).all();
+    if (open.length + this.staging >= IMPORT_LIMITS.pending) throw new ImportError("too_many_pending", 409);
+    this.staging++; // reserved before the first await
 
     const id = randomUUID();
     const dir = join(this.stagingRoot, id);
-    await mkdir(dir, { mode: 0o700 });
     try {
+      await mkdir(dir, { mode: 0o700 });
       const raw = await read(dir);
+      await syncDir(dir); // staged bytes are durable before a row points at them
       const entries = planEntries(raw, prefix, this.vault.list());
+      for (const e of entries) if (e.action === "import") e.noteId = randomUUID();
       const now = Date.now();
       const row: Row = {
         id, source, sourceName, prefix, state: "preview", entriesJson: JSON.stringify(entries),
@@ -98,7 +104,15 @@ export class VaultImporter {
     } catch (e) {
       await rm(dir, { recursive: true, force: true });
       throw e;
+    } finally {
+      this.staging--;
     }
+  }
+
+  /** Imports that still need a decision: open previews and interrupted commits. */
+  listOpen(): VaultImport[] {
+    this.expireOld();
+    return this.db.select().from(vaultImports).where(inArray(vaultImports.state, [...OPEN_STATES, "committing"])).all().map(toApi);
   }
 
   get(id: string): VaultImport | undefined {
@@ -107,10 +121,10 @@ export class VaultImporter {
     return row ? toApi(row) : undefined;
   }
 
-  /** Discards an open preview and its staged bytes. */
+  /** Discards an open preview, or the rest of an interrupted commit (notes already imported stay), and the staged bytes. */
   async cancel(id: string): Promise<boolean> {
     const done = this.db.update(vaultImports).set({ state: "expired", finishedAt: iso() })
-      .where(and(eq(vaultImports.id, id), eq(vaultImports.state, "preview"))).run().changes > 0;
+      .where(and(eq(vaultImports.id, id), inArray(vaultImports.state, OPEN_STATES))).run().changes > 0;
     if (done) await rm(join(this.stagingRoot, id), { recursive: true, force: true });
     return done;
   }
@@ -154,15 +168,19 @@ export class VaultImporter {
 
   private async importOne(id: string, e: StoredEntry): Promise<ImportOutcome> {
     let bytes: Buffer;
-    try { bytes = await readFile(join(this.stagingRoot, id, e.staged!)); } catch { return "failed"; }
+    try {
+      bytes = await readFile(join(this.stagingRoot, id, e.staged!));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return "failed"; // staged copy is gone for good
+      throw err; // transient I/O: the commit stops and stays resumable
+    }
     if (sha256(bytes) !== e.sha256) return "failed"; // staging changed after the preview
     try {
-      const out = await this.vault.importFile(e.dest!, bytes, { resolve: false });
+      const out = await this.vault.importFile(e.dest!, bytes, { resolve: false, ...(e.noteId ? { noteId: e.noteId } : {}) });
       if (out.kind === "created") return "created";
       if (out.kind === "invalid") return "failed";
-      // Resumed commit: the file we wrote before the interruption is already there.
-      const existing = this.vault.list().find((n) => n.path === e.dest && !n.missingSince);
-      return existing?.contentSha256 === e.sha256 && out.kind === "exists" ? "created" : "exists";
+      // Resumed commit: the note there carries the id this entry reserved, so we wrote it before the interruption.
+      return e.noteId && this.vault.get(e.noteId)?.path === e.dest ? "created" : "exists";
     } catch (err) {
       // This entry cannot be written (a file sits where a folder is needed, path escapes): record and go on.
       // Anything else (disk full, I/O) stops the commit; it stays resumable.
@@ -185,6 +203,11 @@ export class VaultImporter {
       void rm(join(this.stagingRoot, r.id), { recursive: true, force: true });
     }
   }
+}
+
+async function syncDir(dir: string): Promise<void> {
+  const fh = await open(dir, constants.O_RDONLY);
+  try { await fh.sync(); } finally { await fh.close(); }
 }
 
 function toApi(row: Row): VaultImport {

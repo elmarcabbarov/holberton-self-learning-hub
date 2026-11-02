@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { FolderImportRequest, IdParam, IMPORT_LIMITS, ImportSources, VaultImport, ZipImportQuery } from "@hub/contracts";
+import { FolderImportRequest, IdParam, IMPORT_LIMITS, ImportSources, VaultImport, VaultImportList, ZipImportQuery } from "@hub/contracts";
 import { ImportError } from "./read.ts";
 import type { VaultImporter } from "./service.ts";
 
@@ -44,6 +44,8 @@ export async function registerVaultImportRoutes(app: FastifyInstance, importer: 
       return importError(reply, e);
     }
   });
+
+  app.get("/api/vault/imports", async () => VaultImportList.parse({ imports: importer.listOpen() }));
 
   app.get("/api/vault/imports/:id", async (req, reply) => {
     const p = IdParam.safeParse(req.params);

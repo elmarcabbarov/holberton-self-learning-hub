@@ -172,6 +172,59 @@ describe("zip import", () => {
   });
 });
 
+describe("Codex review regressions (vault import)", () => {
+  it("crash after publish: recovery gives the file its journaled id, not a missing note's identity", async () => {
+    const old = (await t.req({ method: "POST", url: "/api/notes", payload: { path: "old.md", content: "same bytes" } })).json();
+    unlinkSync(join(t.dir, "vault", "old.md"));
+    await t.app.vault.reconcile();
+    // Simulate: the file reached the disk, the journal says "intent", the notes row was never written.
+    const db = t.app.database.sqlite;
+    mkdirSync(join(t.dir, "vault", "Imported"), { recursive: true });
+    writeFileSync(join(t.dir, "vault", "Imported", "new.md"), "same bytes");
+    const { createHash } = await import("node:crypto");
+    const sha = createHash("sha256").update("same bytes").digest("hex");
+    db.prepare("INSERT INTO file_ops (id, kind, note_id, path, after_sha256, state, created_at, updated_at) VALUES (?, 'create', ?, 'Imported/new.md', ?, 'intent', 'x', 'x')")
+      .run("00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-0000000000aa", sha);
+    const dir = t.dir;
+    await t.app.close();
+    const { buildApp } = await import("../src/app.ts");
+    const { loadConfig } = await import("../src/config.ts");
+    const app = await buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0" }));
+    try {
+      const rows = app.vault.list();
+      expect(rows.find((r) => r.path === "Imported/new.md")!.id).toBe("00000000-0000-4000-8000-0000000000aa");
+      expect(rows.find((r) => r.id === old.id)!.missingSince).not.toBeNull();
+    } finally {
+      await app.close();
+      t = { ...t, close: async () => { rmSync(dir, { recursive: true, force: true }); } };
+    }
+  });
+
+  it("concurrent previews cannot pass the open-preview limit", async () => {
+    const zip = await zipOf([{ name: "a.md", data: "a" }]);
+    const res = await Promise.all(Array.from({ length: 8 }, (_, i) => upload(zip, `prefix=C${i}`)));
+    expect(res.filter((r) => r.statusCode === 201)).toHaveLength(IMPORT_LIMITS.pending);
+    const open = (await t.req({ method: "GET", url: "/api/vault/imports" })).json().imports as VaultImport[];
+    expect(open).toHaveLength(IMPORT_LIMITS.pending);
+  });
+
+  it("a transient staging read error interrupts the commit instead of failing the entry", async () => {
+    const imp = VaultImport.parse((await upload(await zipOf([{ name: "a.md", data: "a" }]))).json());
+    const staged = join(t.dir, "imports", imp.id, "0");
+    const bytes = readFileSync(staged);
+    rmSync(staged); mkdirSync(staged); // reading a directory fails with EISDIR, not ENOENT
+    expect((await commit(imp.id)).statusCode).toBe(500);
+    rmSync(staged, { recursive: true }); writeFileSync(staged, bytes);
+    expect(VaultImport.parse((await commit(imp.id)).json()).counts.created).toBe(1);
+  });
+
+  it("identical bytes written by someone else count as exists, not created", async () => {
+    const imp = VaultImport.parse((await upload(await zipOf([{ name: "a.md", data: "same" }]), "prefix=P")).json());
+    await t.req({ method: "POST", url: "/api/notes", payload: { path: "P/a.md", content: "same" } });
+    expect(VaultImport.parse((await commit(imp.id)).json()).counts).toMatchObject({ created: 0, exists: 1 });
+  });
+});
+
 describe("folder import (HUB_IMPORT_DIR)", () => {
   it("lists only real child folders and copies Markdown without following links", async () => {
     const outside = mkdtempSync(join(tmpdir(), "hub-outside-"));

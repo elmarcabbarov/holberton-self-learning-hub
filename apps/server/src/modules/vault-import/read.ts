@@ -1,5 +1,5 @@
 import { constants, createWriteStream } from "node:fs";
-import { lstat, open, readdir, writeFile } from "node:fs/promises";
+import { lstat, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -128,15 +128,26 @@ export async function readZip(zipPath: string, stageDir: string): Promise<RawEnt
 
 async function stage(stageDir: string, n: number, source: string, bytes: Buffer): Promise<RawEntry> {
   const staged = String(n);
-  await writeFile(join(stageDir, staged), bytes, { flag: "wx", mode: 0o600 });
+  const fh = await open(join(stageDir, staged), constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
+  try { await fh.writeFile(bytes); await fh.sync(); } finally { await fh.close(); }
   return { source, size: bytes.length, reason: null, staged, sha256: sha256(bytes), readOnlyReason: decodeNote(bytes).readOnlyReason };
 }
 
 /** Immediate child folders of the import directory that may be offered (no symlinks, no hidden ones). */
 export async function listFolders(importDir: string): Promise<string[]> {
-  const entries = await readdir(importDir, { withFileTypes: true }).catch(() => []);
-  return entries.filter((e) => e.isDirectory() && !isIgnoredDir(e.name)).map((e) => e.name).sort().slice(0, 200);
+  const out: string[] = [];
+  let dir;
+  try { dir = await opendir(importDir); } catch { return []; }
+  let seen = 0;
+  for await (const e of dir) {
+    if (++seen > MAX_LISTED * 10) break; // bounded scan of a huge folder
+    if (e.isDirectory() && !isIgnoredDir(e.name)) out.push(e.name);
+    if (out.length >= MAX_LISTED) break;
+  }
+  return out.sort();
 }
+
+const MAX_LISTED = 200;
 
 /**
  * Walks `importDir/<folder>` without following symlinks and copies Markdown bytes into `stageDir`,
@@ -150,10 +161,14 @@ export async function readFolder(importDir: string, folder: string, stageDir: st
   let count = 0;
   let total = 0;
   const walk = async (rel: string): Promise<void> => {
-    const dirents = await readdir(rel ? join(root, ...rel.split("/")) : root, { withFileTypes: true });
+    // Read the directory as a stream so the entry limit holds before a huge listing is in memory.
+    const dirents = [];
+    for await (const d of await opendir(rel ? join(root, ...rel.split("/")) : root)) {
+      if (++count > IMPORT_LIMITS.entries) throw new ImportError("too_many_entries");
+      dirents.push(d);
+    }
     dirents.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     for (const d of dirents) {
-      if (++count > IMPORT_LIMITS.entries) throw new ImportError("too_many_entries");
       const source = rel ? `${rel}/${d.name}` : d.name;
       if (d.isSymbolicLink()) { out.push(skip(source, "symlink")); continue; }
       if (d.isDirectory()) {

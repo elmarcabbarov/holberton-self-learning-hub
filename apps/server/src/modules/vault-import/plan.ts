@@ -6,6 +6,8 @@ import type { RawEntry } from "./read.ts";
 export interface StoredEntry extends ImportEntry {
   staged: string | null;
   sha256: string | null;
+  /** Identity the note gets if this entry is imported; proves on resume that the file there is ours. */
+  noteId?: string;
 }
 
 /** Validates a vault folder prefix (same segment rules as note paths) and returns it without edge slashes. */
