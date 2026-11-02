@@ -99,7 +99,9 @@
     "collision": "Another note differs only in letter case or accents. Choose a different name.",
     "invalidPath": "This file name or folder is not allowed.",
     "conflict": "This note changed on disk since you opened it.",
-    "readOnly": "Hub cannot safely edit this file (unsupported encoding or mixed line endings)."
+    "readOnly": "Hub cannot safely edit this file (unsupported encoding or mixed line endings).",
+    "readOnlyLinked": "This note is in your linked vault, which the Hub only reads. Edit it in Obsidian; the Hub picks up the change.",
+    "vaultUnavailable": "The vault this note is in is not available right now."
   },
   "notesPage": {
     "title": "Notes",
@@ -407,5 +409,19 @@
       "exists": "{count, plural, one {# where a note already exists} other {# where notes already exist}}",
       "missing_note": "{count, plural, one {# where a deleted note's cards and history still live} other {# where deleted notes' cards and history still live}}"
     }
+  },
+  "linkedVault": {
+    "badge": "Linked",
+    "title": "Linked vault",
+    "intro": "An existing vault the Hub reads but never changes. Its notes appear in Notes and search, and you can make cards from them. Edit them in Obsidian.",
+    "notes": "{count, plural, one {# note indexed.} other {# notes indexed.}}",
+    "state": {
+      "ready": "Up to date.",
+      "unavailable": "The folder is not available right now (is the drive or mount connected?). Its notes, cards and history are kept.",
+      "replaced": "A different folder is mounted than the one these notes came from. Nothing was changed. If you moved the vault on purpose, confirm it below.",
+      "empty_unconfirmed": "The folder has no Markdown files. Nothing was marked as deleted, in case the mount is missing. If you emptied the vault on purpose, confirm it below."
+    },
+    "rebind": "Yes, use this folder",
+    "rebindHelp": "Notes keep their cards where the same path still exists; notes that are gone are marked missing."
   }
 }

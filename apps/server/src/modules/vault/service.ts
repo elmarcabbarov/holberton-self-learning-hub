@@ -1,15 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, unlink } from "node:fs/promises";
+import { mkdir, readdir, stat, unlink } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
-import type { Db } from "../../lib/db/index.ts";
+import { getMeta, setMeta, type Db } from "../../lib/db/index.ts";
 import { fileOps, notes } from "../../lib/db/schema.ts";
 import { foldKey, isIgnoredDir, PathError, validateNotePath } from "../../lib/fs-safe/paths.ts";
 import { MAX_NOTE_BYTES, publishNew, publishReplace, readStable, resolveInVault, sha256, writeTemp, type FileVersion } from "../../lib/fs-safe/vault-fs.ts";
 import { decodeNote, encodeNote, type Eol } from "../../lib/fs-safe/text.ts";
 import { SerialQueue } from "./queue.ts";
 import { indexNote, resolveLinks, unindexNote } from "./indexer.ts";
-import { notesFtsMap } from "../../lib/db/schema.ts";
 
 type Sqlite = Parameters<typeof indexNote>[1];
 
@@ -29,6 +28,18 @@ export type CreateOutcome =
 
 export interface ReconcileReport { added: number; updated: number; renamed: number; missing: number; error: string | null }
 
+export type VaultName = "hub" | "linked";
+
+/**
+ * Whether the vault's files can be trusted right now (D-062). Only `ready` lets reconcile mark notes missing.
+ * - `unavailable`: the root is gone, not a folder or unreadable (e.g. the mount is missing);
+ * - `replaced`: the root is a different folder than the one the notes were indexed from;
+ * - `empty_unconfirmed`: the root has no Markdown at all while notes exist (an empty mount point looks like this).
+ */
+export type VaultState = "ready" | "unavailable" | "replaced" | "empty_unconfirmed";
+
+export interface VaultOptions { name?: VaultName; readOnly?: boolean }
+
 const iso = () => new Date().toISOString();
 const titleFromPath = (p: string) => basename(p).replace(/\.md$/i, "");
 
@@ -39,19 +50,51 @@ export class Vault {
   lastReconcile: ReconcileReport | null = null;
 
   private readonly sqlite: Sqlite | null;
+  readonly name: VaultName;
+  /** A read-only vault is never written: no mkdir, no journal, no temp files (D-062). */
+  readonly readOnly: boolean;
+  state: VaultState = "ready";
 
   /** `sqlite` enables the derived index (links, tags, FTS); without it only file metadata is kept. */
-  constructor(db: Db, root: string, sqlite: Sqlite | null = null) {
+  constructor(db: Db, root: string, sqlite: Sqlite | null = null, opts: VaultOptions = {}) {
     this.db = db;
     this.root = root;
     this.sqlite = sqlite;
+    this.name = opts.name ?? "hub";
+    this.readOnly = opts.readOnly ?? false;
   }
 
   async init(): Promise<void> {
-    await mkdir(this.root, { recursive: true });
-    await this.queue.run(() => this.recover());
+    if (!this.readOnly) {
+      await mkdir(this.root, { recursive: true });
+      await this.queue.run(() => this.recover());
+    }
     await this.reconcile();
     await this.queue.run(() => this.ensureIndexed());
+  }
+
+  private get mine() { return eq(notes.vault, this.name); }
+
+  /** Identity of the root folder (device + inode), so a different folder mounted at the same path is noticed. */
+  private async rootIdentity(): Promise<string | null> {
+    try {
+      const st = await stat(this.root);
+      if (!st.isDirectory()) return null;
+      await readdir(this.root); // readable
+      return `${st.dev}:${st.ino}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private get bindingKey() { return `vault_source_${this.name}`; }
+
+  /** Accepts the folder now at the root as this vault's source (after a deliberate move or replacement). */
+  rebind(): Promise<ReconcileReport> {
+    return this.queue.run(async () => {
+      const id = await this.rootIdentity();
+      if (id) setMeta(this.db, this.bindingKey, id);
+    }).then(() => this.reconcile({ allowEmpty: true }));
   }
 
   private index(noteId: string, path: string, bytes: Buffer): void {
@@ -59,13 +102,14 @@ export class Vault {
   }
 
   private resolve(): void {
-    if (this.sqlite) resolveLinks(this.db);
+    if (this.sqlite) resolveLinks(this.db, this.name);
   }
 
   /** Indexes present notes that have no index yet (e.g. after upgrading from a version without one). */
   private async ensureIndexed(): Promise<void> {
     if (!this.sqlite) return;
-    const indexed = new Set(this.db.select({ id: notesFtsMap.noteId }).from(notesFtsMap).all().map((r) => r.id));
+    // A map row alone is no proof: unindexNote removes the FTS row and keeps the map (D-062 review).
+    const indexed = new Set((this.sqlite.prepare("SELECT m.note_id AS id FROM notes_fts_map m JOIN notes_fts f ON f.rowid = m.rowid").all() as { id: string }[]).map((r) => r.id));
     let changed = false;
     for (const n of this.list()) {
       if (n.missingSince || indexed.has(n.id)) continue;
@@ -84,11 +128,11 @@ export class Vault {
   exclusive<T>(task: () => Promise<T>): Promise<T> { return this.queue.run(task); }
 
   list(): NoteRow[] {
-    return this.db.select().from(notes).orderBy(notes.path).all();
+    return this.db.select().from(notes).where(this.mine).orderBy(notes.path).all();
   }
 
   get(id: string): NoteRow | undefined {
-    return this.db.select().from(notes).where(eq(notes.id, id)).get();
+    return this.db.select().from(notes).where(and(eq(notes.id, id), this.mine)).get();
   }
 
   /** Current file content as editor text plus version; null when the file is gone. */
@@ -102,14 +146,15 @@ export class Vault {
   }
 
   create(path: string, text: string): Promise<CreateOutcome> {
+    if (this.readOnly) return Promise.resolve({ kind: "invalid", reason: "read_only" });
     return this.queue.run(async () => {
       let rel: string;
       try { rel = validateNotePath(path); } catch (e) { return { kind: "invalid", reason: (e as PathError).reason ?? "invalid" }; }
       const key = foldKey(rel);
-      const clash = this.db.select().from(notes).where(and(eq(notes.foldKey, key), isNull(notes.missingSince))).get();
+      const clash = this.db.select().from(notes).where(and(eq(notes.foldKey, key), isNull(notes.missingSince), this.mine)).get();
       if (clash) return clash.path === rel ? { kind: "exists" } : { kind: "collision", with: clash.path };
       // A missing note at the same path keeps its id (and its cards/links) when recreated.
-      const prior = this.db.select().from(notes).where(eq(notes.path, rel)).get();
+      const prior = this.db.select().from(notes).where(and(eq(notes.path, rel), this.mine)).get();
       return this.publishCreate(rel, encodeNote(text, "lf", false), prior);
     });
   }
@@ -120,10 +165,11 @@ export class Vault {
    * `resolve: false` defers link resolution; the caller runs `resolveLinks()` once afterwards.
    */
   importFile(path: string, bytes: Buffer, opts: { resolve?: boolean; noteId?: string } = {}): Promise<CreateOutcome | { kind: "taken" }> {
+    if (this.readOnly) return Promise.resolve({ kind: "invalid", reason: "read_only" });
     return this.queue.run(async () => {
       let rel: string;
       try { rel = validateNotePath(path); } catch (e) { return { kind: "invalid", reason: (e as PathError).reason ?? "invalid" }; }
-      const clash = this.db.select().from(notes).where(eq(notes.foldKey, foldKey(rel))).get();
+      const clash = this.db.select().from(notes).where(and(eq(notes.foldKey, foldKey(rel)), this.mine)).get();
       if (clash?.missingSince) return { kind: "taken" };
       if (clash) return clash.path === rel ? { kind: "exists" } : { kind: "collision", with: clash.path };
       return this.publishCreate(rel, bytes, undefined, opts.resolve ?? true, opts.noteId);
@@ -171,6 +217,7 @@ export class Vault {
   }
 
   save(id: string, text: string, expectedSha256: string): Promise<SaveOutcome> {
+    if (this.readOnly) return Promise.resolve(this.get(id) ? { kind: "read_only", reason: "linked" } : { kind: "not_found" });
     return this.queue.run(async () => {
       const note = this.get(id);
       if (!note || note.missingSince) return { kind: "not_found" };
@@ -214,20 +261,31 @@ export class Vault {
   }
 
   /** Rescans the vault and updates the index; serialized with mutations. */
-  reconcile(): Promise<ReconcileReport> {
+  reconcile(opts: { allowEmpty?: boolean } = {}): Promise<ReconcileReport> {
     return this.queue.run(async () => {
       const report: ReconcileReport = { added: 0, updated: 0, renamed: 0, missing: 0, error: null };
+      const stop = (state: VaultState, error: string) => { this.state = state; report.error = error; this.lastReconcile = report; return report; };
+      // A vault whose source cannot be trusted keeps every row and identity as it is (D-062).
+      const identity = await this.rootIdentity();
+      if (!identity) return stop("unavailable", "root unavailable");
+      // Source binding and the empty guard apply to the linked vault; the Hub vault's folder is the Hub's own
+      // and legitimately gets a new inode after a restore.
+      const bound = this.readOnly ? getMeta(this.db, this.bindingKey) : undefined;
+      if (bound && bound !== identity) return stop("replaced", "a different folder is mounted");
       let files: Map<string, { bytes: Buffer; version: FileVersion }>;
       let unreadable: Set<string>;
       try {
         ({ files, unreadable } = await this.scan());
       } catch (err) {
         // Never mark notes missing after a failed enumeration (D-052).
-        report.error = (err as Error).message;
-        this.lastReconcile = report;
-        return report;
+        return stop(this.readOnly ? "unavailable" : this.state, (err as Error).message);
       }
       const rows = this.list();
+      if (this.readOnly && files.size === 0 && unreadable.size === 0 && !opts.allowEmpty && rows.some((r) => !r.missingSince)) {
+        return stop("empty_unconfirmed", "no Markdown files found");
+      }
+      if (this.readOnly && !bound) setMeta(this.db, this.bindingKey, identity);
+      this.state = "ready";
       const byPath = new Map(rows.map((r) => [r.path, r]));
       const newPaths: string[] = [];
       for (const [path, f] of files) {
@@ -335,7 +393,7 @@ export class Vault {
 
   private adoptCreated(noteId: string, path: string, file: { bytes: Buffer } & FileVersion): void {
     const byId = this.get(noteId);
-    const byPath = this.db.select().from(notes).where(eq(notes.path, path)).get();
+    const byPath = this.db.select().from(notes).where(and(eq(notes.path, path), this.mine)).get();
     if (byPath && byPath.id !== noteId) return; // the path already has its own row
     const row = this.rowFromFile(noteId, path, file.bytes, file, byId?.createdAt);
     this.db.transaction((tx) => {
@@ -352,7 +410,7 @@ export class Vault {
     const decoded = decodeNote(bytes);
     const ts = iso();
     return {
-      id, path, foldKey: foldKey(path), title: titleFromPath(path), contentSha256: v.sha256, size: v.size,
+      id, vault: this.name, path, foldKey: foldKey(path), title: titleFromPath(path), contentSha256: v.sha256, size: v.size,
       mtimeMs: Math.round(v.mtimeMs), eol: decoded.eol, bom: decoded.bom, readOnlyReason: decoded.readOnlyReason,
       missingSince: null, createdAt: createdAt ?? ts, updatedAt: ts,
     };

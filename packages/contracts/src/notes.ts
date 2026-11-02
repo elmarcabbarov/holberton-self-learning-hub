@@ -3,12 +3,17 @@ import { z } from "zod";
 export const NoteVersion = z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/), size: z.number().int().nonnegative(), mtimeMs: z.number().int() });
 export type NoteVersion = z.infer<typeof NoteVersion>;
 
+/** `hub` = the Hub's own writable vault; `linked` = an existing vault mounted read-only (D-062). */
+export const VaultName = z.enum(["hub", "linked"]);
+export type VaultName = z.infer<typeof VaultName>;
+
 export const NoteSummary = z.object({
   id: z.string().uuid(),
+  vault: VaultName,
   path: z.string(),
   title: z.string(),
   missing: z.boolean(),
-  readOnlyReason: z.enum(["invalid_utf8", "mixed_eol"]).nullable(),
+  readOnlyReason: z.enum(["invalid_utf8", "mixed_eol", "linked"]).nullable(),
   updatedAt: z.string(),
 });
 export type NoteSummary = z.infer<typeof NoteSummary>;
@@ -29,17 +34,23 @@ export type SaveNote = z.infer<typeof SaveNote>;
 export const NoteConflict = z.object({ error: z.object({ code: z.literal("conflict"), messageKey: z.string(), details: z.object({ current: NoteVersion }) }) });
 export type NoteConflict = z.infer<typeof NoteConflict>;
 
+const Reconcile = z.object({ added: z.number(), updated: z.number(), renamed: z.number(), missing: z.number(), error: z.string().nullable() });
+export const VaultState = z.enum(["ready", "unavailable", "replaced", "empty_unconfirmed"]);
+export type VaultState = z.infer<typeof VaultState>;
+
 export const VaultStatus = z.object({
-  lastReconcile: z.object({ added: z.number(), updated: z.number(), renamed: z.number(), missing: z.number(), error: z.string().nullable() }).nullable(),
+  lastReconcile: Reconcile.nullable(),
   collisions: z.array(z.array(z.string())),
+  /** Null when no linked vault is configured (HUB_LINKED_VAULT). */
+  linked: z.object({ state: VaultState, notes: z.number().int(), lastReconcile: Reconcile.nullable(), collisions: z.array(z.array(z.string())) }).nullable(),
 });
 export type VaultStatus = z.infer<typeof VaultStatus>;
 
-export const SearchHit = z.object({ id: z.string().uuid(), path: z.string(), title: z.string(), snippet: z.string() });
+export const SearchHit = z.object({ id: z.string().uuid(), vault: VaultName, path: z.string(), title: z.string(), snippet: z.string() });
 export const SearchResults = z.object({ hits: z.array(SearchHit) });
 export type SearchResults = z.infer<typeof SearchResults>;
 
-export const Backlink = z.object({ id: z.string().uuid(), path: z.string(), title: z.string(), kind: z.enum(["wiki", "embed", "md", "md-embed"]), anchor: z.string().nullable() });
+export const Backlink = z.object({ id: z.string().uuid(), vault: VaultName, path: z.string(), title: z.string(), kind: z.enum(["wiki", "embed", "md", "md-embed"]), anchor: z.string().nullable() });
 export const Backlinks = z.object({ links: z.array(Backlink) });
 export type Backlinks = z.infer<typeof Backlinks>;
 

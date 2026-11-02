@@ -24,6 +24,8 @@ export interface HubConfig {
   vaultPolling: boolean;
   /** Folder whose immediate subfolders can be imported into the vault (HUB_IMPORT_DIR, D-061). */
   importDir: string | null;
+  /** Existing vault indexed read-only (HUB_LINKED_VAULT, D-062). */
+  linkedVault: string | null;
 }
 
 function parseMode(raw: string | undefined): HubMode {
@@ -69,6 +71,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HubConfig {
     watchVault: env.HUB_VAULT_WATCH !== "0",
     vaultPolling: env.HUB_VAULT_POLL === "1",
     importDir: env.HUB_IMPORT_DIR ? resolve(env.HUB_IMPORT_DIR) : null,
+    linkedVault: env.HUB_LINKED_VAULT ? resolve(env.HUB_LINKED_VAULT) : null,
     bindHost,
     // Default is the repository root's .data, independent of the working directory.
     dataDir: env.HUB_DATA ? resolve(env.HUB_DATA) : fileURLToPath(new URL("../../../.data", import.meta.url)),

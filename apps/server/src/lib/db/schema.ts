@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /** Instance-level key/value facts (instance id, creation time, schema notes). */
 export const appMeta = sqliteTable("app_meta", {
@@ -45,7 +45,9 @@ export const topics = sqliteTable("topics", {
 /** Index of Markdown notes. Content lives in files (ADR-002); this is derived metadata. */
 export const notes = sqliteTable("notes", {
   id: text("id").primaryKey(),
-  path: text("path").notNull().unique(),
+  /** Which vault the file lives in: `hub` (writable) or `linked` (read-only, D-062). Ids stay globally unique. */
+  vault: text("vault").notNull().default("hub"),
+  path: text("path").notNull(),
   foldKey: text("fold_key").notNull(),
   title: text("title").notNull(),
   contentSha256: text("content_sha256").notNull(),
@@ -57,7 +59,12 @@ export const notes = sqliteTable("notes", {
   missingSince: text("missing_since"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-}, (t) => [index("notes_fold_key_idx").on(t.foldKey), index("notes_sha_idx").on(t.contentSha256)]);
+}, (t) => [
+  uniqueIndex("notes_vault_path_unique").on(t.vault, t.path),
+  index("notes_fold_key_idx").on(t.foldKey),
+  index("notes_sha_idx").on(t.contentSha256),
+  index("notes_vault_fold_key_idx").on(t.vault, t.foldKey),
+]);
 
 /** File-operation journal (D-035, D-050): intent is durable before the filesystem changes. */
 export const fileOps = sqliteTable("file_ops", {
