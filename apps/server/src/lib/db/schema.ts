@@ -203,3 +203,32 @@ export const vaultImports = sqliteTable("vault_imports", {
   expiresAt: text("expires_at").notNull(),
   finishedAt: text("finished_at"),
 });
+
+/** Goals of a space (HSLH-007, D-063). Progress is "tasks completed", never mastery. */
+export const goals = sqliteTable("goals", {
+  id: text("id").primaryKey(),
+  spaceId: text("space_id").notNull().references(() => spaces.id, { onDelete: "restrict" }),
+  title: text("title").notNull(),
+  criteria: text("criteria").notNull().default(""), // what "done" means, in the learner's words
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  archivedAt: text("archived_at"),
+}, (t) => [index("goals_space_idx").on(t.spaceId, t.createdAt)]);
+
+export const goalTasks = sqliteTable("goal_tasks", {
+  id: text("id").primaryKey(),
+  goalId: text("goal_id").notNull().references(() => goals.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  position: integer("position").notNull(),
+  done: integer("done", { mode: "boolean" }).notNull().default(false),
+  /** First time the task was checked; kept when it is unchecked and checked again (D-063). */
+  doneAt: text("done_at"),
+  createdAt: text("created_at").notNull(),
+}, (t) => [index("goal_tasks_goal_idx").on(t.goalId, t.position)]);
+
+/** Note ↔ topic links live only in the database; note files are never touched (D-002). */
+export const noteTopics = sqliteTable("note_topics", {
+  noteId: text("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  topicId: text("topic_id").notNull().references(() => topics.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.noteId, t.topicId] }), index("note_topics_topic_idx").on(t.topicId)]);

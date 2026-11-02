@@ -8,3 +8,4 @@ export * from "./backups.ts";
 export * from "./import.ts";
 export * from "./quizzes.ts";
 export * from "./vault-import.ts";
+export * from "./goals.ts";
