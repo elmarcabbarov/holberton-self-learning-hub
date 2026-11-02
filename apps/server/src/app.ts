@@ -14,7 +14,7 @@ import { registerBackupRoutes } from "./modules/backup/routes.ts";
 import { registerImportRoutes } from "./modules/import/routes.ts";
 import { registerQuizRoutes } from "./modules/quizzes/routes.ts";
 import { restorePending } from "./modules/backup/restore.ts";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { realpath } from "node:fs/promises";
 import { acquireLock } from "./lib/lockfile.ts";
 import { Vault } from "./modules/vault/service.ts";
@@ -37,6 +37,11 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
   });
 
+  // The linked vault is read-only and must never overlap a folder the Hub writes to (D-062).
+  // Checked before anything opens, creates or cleans files under the data folder.
+  if (config.linkedVault && await overlaps(config.linkedVault, config.dataDir)) {
+    throw new Error("HUB_LINKED_VAULT must not overlap the Hub data folder.");
+  }
   if (await restorePending(config.dataDir)) {
     throw new Error("A restore did not finish. Run the restore command again before starting the Hub.");
   }
@@ -51,11 +56,6 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await importer.init();
   let linked: Vault | null = null;
   if (config.linkedVault) {
-    // The linked vault is read-only and must never overlap a folder the Hub writes to (D-062).
-    if (await overlaps(config.linkedVault, config.dataDir)) {
-      database.close(); await releaseLock();
-      throw new Error("HUB_LINKED_VAULT must not overlap the Hub data folder.");
-    }
     linked = new Vault(database.db, config.linkedVault, database.sqlite, { name: "linked", readOnly: true });
     await linked.init();
   }
@@ -127,6 +127,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
 async function overlaps(a: string, b: string): Promise<boolean> {
   const real = async (p: string) => realpath(p).catch(() => resolve(p));
   const [x, y] = [await real(a), await real(b)];
-  const inside = (p: string, q: string) => { const r = relative(q, p); return r === "" || (!r.startsWith("..") && !isAbsolute(r)); };
+  // By path component: a child named `..hub` is inside; only `..` itself or `../…` is outside.
+  const inside = (p: string, q: string) => { const r = relative(q, p); return r === "" || (r !== ".." && !r.startsWith(`..${sep}`) && !isAbsolute(r)); };
   return inside(x, y) || inside(y, x);
 }

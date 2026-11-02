@@ -45,7 +45,7 @@ export async function registerVaultRoutes(app: FastifyInstance, vault: Vault, da
   });
 
   app.get("/api/notes", async (req, reply) => {
-    const q = z.object({ cursor: z.string().max(600).optional() }).safeParse(req.query ?? {});
+    const q = z.object({ cursor: z.string().max(4200).optional() }).safeParse(req.query ?? {});
     if (!q.success) return err(reply, 400, "validation_failed", "errors.validation");
     const { cursor } = q.data;
     const rows = allRows().sort((a, b) => (keyOf(a) < keyOf(b) ? -1 : 1)).filter((r) => cursor === undefined || keyOf(r) > cursor);

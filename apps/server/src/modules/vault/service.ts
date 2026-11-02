@@ -70,7 +70,8 @@ export class Vault {
       await this.queue.run(() => this.recover());
     }
     await this.reconcile();
-    await this.queue.run(() => this.ensureIndexed());
+    // An unconfirmed (replaced/unavailable) source must not rewrite titles, links or search text (D-062).
+    if (this.state === "ready") await this.queue.run(() => this.ensureIndexed());
   }
 
   private get mine() { return eq(notes.vault, this.name); }
@@ -94,7 +95,11 @@ export class Vault {
     return this.queue.run(async () => {
       const id = await this.rootIdentity();
       if (id) setMeta(this.db, this.bindingKey, id);
-    }).then(() => this.reconcile({ allowEmpty: true }));
+    }).then(async () => {
+      const report = await this.reconcile({ allowEmpty: true });
+      if (this.state === "ready") await this.queue.run(() => this.ensureIndexed());
+      return report;
+    });
   }
 
   private index(noteId: string, path: string, bytes: Buffer): void {

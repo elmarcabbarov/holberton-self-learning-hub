@@ -124,6 +124,39 @@ describe("linked read-only vault", () => {
     }
   });
 
+  it("does not repair the index from an unconfirmed replacement folder", async () => {
+    const id = (await linkedNote("Shell/quoting.md")).id;
+    t.app.database.sqlite.prepare("DELETE FROM notes_fts WHERE rowid = (SELECT rowid FROM notes_fts_map WHERE note_id = ?)").run(id);
+    const dir = t.dir;
+    await t.app.close();
+    renameSync(linked, `${linked}-old`);
+    mkdirSync(join(linked, "Shell"), { recursive: true });
+    writeFileSync(join(linked, "Shell", "quoting.md"), "# Stranger\n");
+    const app = await buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0", HUB_LINKED_VAULT: linked }));
+    try {
+      expect(app.linkedVault!.state).toBe("replaced");
+      expect(app.linkedVault!.get(id)!.title).toBe("Quoting");
+    } finally {
+      await app.close();
+      rmSync(`${linked}-old`, { recursive: true, force: true });
+      t = await signedInApp({ HUB_LINKED_VAULT: linked });
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("paginates past notes with very long paths", async () => {
+    let deep = linked;
+    for (let i = 0; i < 4; i++) { deep = join(deep, "d".repeat(140)); mkdirSync(deep); }
+    writeFileSync(join(deep, `${"n".repeat(30)}.md`), "deep");
+    for (let i = 0; i < 205; i++) await t.req({ method: "POST", url: "/api/notes", payload: { path: `bulk/${String(i).padStart(3, "0")}.md`, content: "x" } });
+    await t.app.linkedVault!.reconcile();
+    const first = NoteList.parse((await t.req({ method: "GET", url: "/api/notes" })).json());
+    const second = await t.req({ method: "GET", url: `/api/notes?cursor=${encodeURIComponent(first.nextCursor!)}` });
+    expect(second.statusCode).toBe(200);
+    const all = [...first.notes, ...NoteList.parse(second.json()).notes];
+    expect(all.some((n) => n.path.endsWith(`${"n".repeat(30)}.md`))).toBe(true);
+  });
+
   it("linked notes never block a Hub import to the same path", async () => {
     const yazl = (await import("yazl")).default;
     const zip = new yazl.ZipFile();
@@ -158,6 +191,12 @@ describe("linked read-only vault", () => {
     try {
       await expect(buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0", HUB_LINKED_VAULT: join(dir, "vault") }))).rejects.toThrow(/overlap/);
       await expect(buildApp(loadConfig({ HUB_DATA: join(dir, "inner"), HUB_VAULT_WATCH: "0", HUB_LINKED_VAULT: dir }))).rejects.toThrow(/overlap/);
+      await expect(buildApp(loadConfig({ HUB_DATA: join(dir, "..hub"), HUB_VAULT_WATCH: "0", HUB_LINKED_VAULT: dir }))).rejects.toThrow(/overlap/);
+      // Rejected before startup cleanup runs: files in an overlapping folder survive.
+      mkdirSync(join(dir, "imports", "notes"), { recursive: true });
+      writeFileSync(join(dir, "imports", "notes", "keep.md"), "keep");
+      await expect(buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0", HUB_LINKED_VAULT: join(dir, "imports") }))).rejects.toThrow(/overlap/);
+      expect(readdirSync(join(dir, "imports", "notes"))).toEqual(["keep.md"]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
