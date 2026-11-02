@@ -134,7 +134,7 @@ export class Vault {
         else tx.insert(notes).values(row).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
         this.index(noteId, rel, file.bytes); // same transaction: metadata and index never diverge
-      });
+      }, { behavior: "immediate" });
       this.resolve();
       return { kind: "created", note: this.get(noteId) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
     });
@@ -176,7 +176,7 @@ export class Vault {
         tx.update(notes).set(row).where(eq(notes.id, id)).run();
         tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
         this.index(id, note.path, file.bytes);
-      });
+      }, { behavior: "immediate" });
       this.resolve();
       // Version of the bytes we wrote; if an external writer raced us, the next save conflicts (D-040).
       return { kind: "saved", note: this.get(id) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
@@ -207,7 +207,7 @@ export class Vault {
           this.db.transaction(() => {
             this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
             this.index(row.id, path, f.bytes);
-          });
+          }, { behavior: "immediate" });
           report.updated++;
         }
       }
@@ -226,7 +226,7 @@ export class Vault {
           this.db.transaction(() => {
             this.db.update(notes).set(this.rowFromFile(row.id, path, f.bytes, f.version, row.createdAt)).where(eq(notes.id, row.id)).run();
             this.index(row.id, path, f.bytes);
-          });
+          }, { behavior: "immediate" });
           renamedNew.add(path);
           renamedRows.add(row.id);
           report.renamed++;
@@ -245,7 +245,7 @@ export class Vault {
         this.db.transaction(() => {
           this.db.insert(notes).values(this.rowFromFile(id, path, f.bytes, f.version)).run();
           this.index(id, path, f.bytes);
-        });
+        }, { behavior: "immediate" });
         report.added++;
       }
       if (report.added + report.updated + report.renamed + report.missing > 0) this.resolve();

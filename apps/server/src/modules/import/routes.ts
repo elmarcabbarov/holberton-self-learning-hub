@@ -29,7 +29,7 @@ export async function registerImportRoutes(app: FastifyInstance, database: Datab
         }
       }
       return { spaceId: space.id, cards: n };
-    });
+    }, { behavior: "immediate" });
 
     let noteId: string | null = null; let notePath: string | null = null; let noteSkipped = false;
     if (body.data.note) {
@@ -48,7 +48,7 @@ export async function registerImportRoutes(app: FastifyInstance, database: Datab
           for (const id of topicIds) db.delete(cardsTable).where(eq(cardsTable.topicId, id)).run();
           db.delete(topicsTable).where(eq(topicsTable.spaceId, spaceId)).run();
           db.delete(spaces).where(eq(spaces.id, spaceId)).run();
-        });
+        }, { behavior: "immediate" });
         throw e;
       }
       noteSkipped = noteId === null;

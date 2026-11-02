@@ -69,7 +69,7 @@ export function createTopic(db: Db, spaceId: string, input: CreateTopic): TopicR
     const row: TopicRow = { id: randomUUID(), spaceId, name: input.name, position: last === null || last === undefined ? 0 : last + 1, createdAt: ts, updatedAt: ts, archivedAt: null };
     tx.insert(topics).values(row).run();
     return row;
-  });
+  }, { behavior: "immediate" });
 }
 
 export function updateTopic(db: Db, id: string, input: UpdateTopic): TopicRow | undefined {
