@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /** Instance-level key/value facts (instance id, creation time, schema notes). */
 export const appMeta = sqliteTable("app_meta", {
@@ -134,3 +134,49 @@ export const cardReviews = sqliteTable("card_reviews", {
   prevState: text("prev_state").notNull(), // JSON snapshot of the card's FSRS state before
   nextState: text("next_state").notNull(), // JSON snapshot after
 }, (t) => [index("card_reviews_card_idx").on(t.cardId, t.reviewedAt)]);
+
+/** Manual quizzes (HSLH-009). A topic can be removed; the quiz then becomes "Unassigned". */
+export const quizzes = sqliteTable("quizzes", {
+  id: text("id").primaryKey(),
+  topicId: text("topic_id").references(() => topics.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  archivedAt: text("archived_at"),
+}, (t) => [index("quizzes_topic_idx").on(t.topicId)]);
+
+/** Editable question bank. Attempts never read it after they start: they keep a snapshot (D-032). */
+export const quizQuestions = sqliteTable("quiz_questions", {
+  id: text("id").primaryKey(),
+  quizId: text("quiz_id").notNull().references(() => quizzes.id),
+  position: integer("position").notNull(),
+  type: text("type").notNull(), // mcq | multi | short_self
+  prompt: text("prompt").notNull(),
+  optionsJson: text("options_json").notNull(), // string[] (empty for short_self)
+  answerJson: text("answer_json").notNull(), // { correct: number[] } | { reference: string }
+  explanation: text("explanation").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  archivedAt: text("archived_at"),
+}, (t) => [index("quiz_questions_quiz_idx").on(t.quizId, t.position)]);
+
+/** One run through a quiz. `questions_json` is the immutable snapshot taken at start (D-032). */
+export const quizAttempts = sqliteTable("quiz_attempts", {
+  id: text("id").primaryKey(),
+  quizId: text("quiz_id").notNull(),
+  mode: text("mode").notNull(), // practice | exam
+  confidencePre: integer("confidence_pre"), // 1..5, null = skipped (D-005: a signal only)
+  questionsJson: text("questions_json").notNull(),
+  startedAt: text("started_at").notNull(),
+  finishedAt: text("finished_at"),
+}, (t) => [index("quiz_attempts_quiz_idx").on(t.quizId, t.startedAt)]);
+
+/** Answers inside an attempt; `question_id` refers to the snapshot, not the live bank. */
+export const quizAnswers = sqliteTable("quiz_answers", {
+  attemptId: text("attempt_id").notNull().references(() => quizAttempts.id),
+  questionId: text("question_id").notNull(),
+  responseJson: text("response_json").notNull(),
+  answeredAt: text("answered_at").notNull(),
+  correct: integer("correct", { mode: "boolean" }), // null = short answer not graded yet
+  gradedAt: text("graded_at"),
+}, (t) => [primaryKey({ columns: [t.attemptId, t.questionId] })]);
