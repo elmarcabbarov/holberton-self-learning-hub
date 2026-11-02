@@ -17,9 +17,9 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function signedInApp(): Promise<TestApp> {
+export async function signedInApp(env: Record<string, string> = {}): Promise<TestApp> {
   const dir = mkdtempSync(join(tmpdir(), "hub-test-"));
-  const app = await buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0" }));
+  const app = await buildApp(loadConfig({ HUB_DATA: dir, HUB_VAULT_WATCH: "0", ...env }));
   const headers = { host: HOST, origin: ORIGIN, "content-type": "application/json" };
   const res = await app.inject({ method: "POST", url: "/api/auth/bootstrap", headers, payload: { token: createBootstrapToken(app.database.db) } });
   const cookie = res.cookies.map((c) => `${c.name}=${c.value}`).join("; ");

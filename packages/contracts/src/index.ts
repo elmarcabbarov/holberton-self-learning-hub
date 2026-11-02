@@ -7,3 +7,4 @@ export * from "./cards.ts";
 export * from "./backups.ts";
 export * from "./import.ts";
 export * from "./quizzes.ts";
+export * from "./vault-import.ts";

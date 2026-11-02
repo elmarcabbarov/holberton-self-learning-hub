@@ -8,10 +8,14 @@ services:
       HUB_MODE: ${HUB_MODE:-local}
       # Port the browser uses; needed for the Host check and printed links (D-046).
       HUB_PUBLIC_PORT: ${HUB_PORT:-3000}
+      # HUB_IMPORT_DIR: /import
     volumes:
       - ${HUB_DATA:-./.data}:/data
       # Optional read-only linked vault (OBSIDIAN_STRATEGY §7). Uncomment and set LINKED_VAULT in .env.
       # - ${LINKED_VAULT}:/linked:ro
+      # Optional import folder (D-061): its subfolders can be copied into the vault from Settings.
+      # Uncomment both lines and set IMPORT_DIR in .env.
+      # - ${IMPORT_DIR}:/import:ro
     user: "${UID:-1000}:${GID:-1000}"
     read_only: true
     tmpfs: [/tmp]

@@ -108,36 +108,66 @@ export class Vault {
       const key = foldKey(rel);
       const clash = this.db.select().from(notes).where(and(eq(notes.foldKey, key), isNull(notes.missingSince))).get();
       if (clash) return clash.path === rel ? { kind: "exists" } : { kind: "collision", with: clash.path };
-
-      const bytes = encodeNote(text, "lf", false);
-      if (bytes.length > MAX_NOTE_BYTES) return { kind: "invalid", reason: "too_large" };
-      const abs = await resolveInVault(this.root, rel);
       // A missing note at the same path keeps its id (and its cards/links) when recreated.
       const prior = this.db.select().from(notes).where(eq(notes.path, rel)).get();
-      const noteId = prior?.id ?? randomUUID();
-      const opId = randomUUID();
-      const after = sha256(bytes);
-      this.db.insert(fileOps).values({ id: opId, kind: "create", noteId, path: rel, afterSha256: after, state: "intent", createdAt: iso(), updatedAt: iso() }).run();
-      const temp = await writeTemp(abs, bytes);
-      this.db.update(fileOps).set({ tempPath: temp, updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
-      try {
-        await publishNew(temp, abs);
-      } catch (err) {
-        this.db.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
-        if ((err as NodeJS.ErrnoException).code === "EEXIST") return { kind: "exists" };
-        throw err;
-      }
-      const file = await readStable(abs);
-      const row = this.rowFromFile(noteId, rel, file.bytes, file);
-      this.db.transaction((tx) => {
-        if (prior) tx.update(notes).set({ ...row, createdAt: prior.createdAt }).where(eq(notes.id, noteId)).run();
-        else tx.insert(notes).values(row).run();
-        tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
-        this.index(noteId, rel, file.bytes); // same transaction: metadata and index never diverge
-      }, { behavior: "immediate" });
-      this.resolve();
-      return { kind: "created", note: this.get(noteId) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
+      return this.publishCreate(rel, encodeNote(text, "lf", false), prior);
     });
+  }
+
+  /**
+   * Imports a file byte for byte (BOM, EOL and final newline kept; D-061). Never overwrites, and never reuses
+   * a missing note's row: a path owned by any note row (present or missing, same fold key) is refused.
+   * `resolve: false` defers link resolution; the caller runs `resolveLinks()` once afterwards.
+   */
+  importFile(path: string, bytes: Buffer, opts: { resolve?: boolean; noteId?: string } = {}): Promise<CreateOutcome | { kind: "taken" }> {
+    return this.queue.run(async () => {
+      let rel: string;
+      try { rel = validateNotePath(path); } catch (e) { return { kind: "invalid", reason: (e as PathError).reason ?? "invalid" }; }
+      const clash = this.db.select().from(notes).where(eq(notes.foldKey, foldKey(rel))).get();
+      if (clash?.missingSince) return { kind: "taken" };
+      if (clash) return clash.path === rel ? { kind: "exists" } : { kind: "collision", with: clash.path };
+      return this.publishCreate(rel, bytes, undefined, opts.resolve ?? true, opts.noteId);
+    });
+  }
+
+  /** Re-resolves wikilinks across the vault (after a batch of deferred imports). */
+  resolveLinks(): Promise<void> {
+    return this.queue.run(async () => { this.resolve(); });
+  }
+
+  /** Journaled create of a new file; runs inside the queue (D-050). */
+  private async publishCreate(rel: string, bytes: Buffer, prior: NoteRow | undefined, resolve = true, newId?: string): Promise<CreateOutcome> {
+    if (bytes.length > MAX_NOTE_BYTES) return { kind: "invalid", reason: "too_large" };
+    const abs = await resolveInVault(this.root, rel);
+    const noteId = prior?.id ?? newId ?? randomUUID();
+    const opId = randomUUID();
+    const after = sha256(bytes);
+    this.db.insert(fileOps).values({ id: opId, kind: "create", noteId, path: rel, afterSha256: after, state: "intent", createdAt: iso(), updatedAt: iso() }).run();
+    let temp: string;
+    try {
+      temp = await writeTemp(abs, bytes);
+    } catch (err) {
+      this.db.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+      throw err;
+    }
+    this.db.update(fileOps).set({ tempPath: temp, updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+    try {
+      await publishNew(temp, abs);
+    } catch (err) {
+      this.db.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+      if ((err as NodeJS.ErrnoException).code === "EEXIST") return { kind: "exists" };
+      throw err;
+    }
+    const file = await readStable(abs);
+    const row = this.rowFromFile(noteId, rel, file.bytes, file);
+    this.db.transaction((tx) => {
+      if (prior) tx.update(notes).set({ ...row, createdAt: prior.createdAt }).where(eq(notes.id, noteId)).run();
+      else tx.insert(notes).values(row).run();
+      tx.update(fileOps).set({ state: "done", updatedAt: iso() }).where(eq(fileOps.id, opId)).run();
+      this.index(noteId, rel, file.bytes); // same transaction: metadata and index never diverge
+    }, { behavior: "immediate" });
+    if (resolve) this.resolve();
+    return { kind: "created", note: this.get(noteId) ?? row, version: { sha256: after, size: bytes.length, mtimeMs: Math.round(file.mtimeMs) } };
   }
 
   save(id: string, text: string, expectedSha256: string): Promise<SaveOutcome> {
@@ -294,10 +324,24 @@ export class Vault {
         const abs = await resolveInVault(this.root, op.path);
         const file = await readStable(abs).catch(() => null);
         if (file && file.sha256 !== op.afterSha256 && file.sha256 !== op.beforeSha256) state = "conflict";
+        // A create that reached the disk but not the notes table: give the file the journaled identity now,
+        // before reconcile could match it to some missing note by hash and hand it that note's cards (D-061).
+        else if (file && op.kind === "create" && file.sha256 === op.afterSha256) this.adoptCreated(op.noteId, op.path, file);
       } catch { state = "conflict"; }
       this.db.update(fileOps).set({ state, updatedAt: iso() }).where(eq(fileOps.id, op.id)).run();
     }
     // Reconcile (run right after) brings note metadata in line with whatever is on disk.
+  }
+
+  private adoptCreated(noteId: string, path: string, file: { bytes: Buffer } & FileVersion): void {
+    const byId = this.get(noteId);
+    const byPath = this.db.select().from(notes).where(eq(notes.path, path)).get();
+    if (byPath && byPath.id !== noteId) return; // the path already has its own row
+    const row = this.rowFromFile(noteId, path, file.bytes, file, byId?.createdAt);
+    this.db.transaction((tx) => {
+      if (byId) tx.update(notes).set(row).where(eq(notes.id, noteId)).run();
+      else tx.insert(notes).values(row).run();
+    }, { behavior: "immediate" });
   }
 
   pendingConflicts() {
