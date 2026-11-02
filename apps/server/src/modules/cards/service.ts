@@ -128,5 +128,5 @@ export function reviewCard(db: Db, cardId: string, rating: 1 | 2 | 3 | 4, eventI
       prevState: JSON.stringify(fromFsrs(before)), nextState: JSON.stringify(next),
     }).run();
     return { kind: "reviewed", card: { ...row, ...next } };
-  });
+  }, { behavior: "immediate" });
 }
