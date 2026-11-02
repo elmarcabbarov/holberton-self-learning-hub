@@ -9,6 +9,8 @@ import { Notes } from "./routes/Notes.tsx";
 import { NoteEditorPage } from "./routes/NoteEditor.tsx";
 import { Review } from "./routes/Review.tsx";
 import { ImportProject } from "./routes/ImportProject.tsx";
+import { QuizPage } from "./routes/QuizPage.tsx";
+import { AttemptPage } from "./routes/AttemptPage.tsx";
 import { AuthGate } from "./components/AuthGate.tsx";
 
 const root = createRootRoute({ component: AuthGate, notFoundComponent: () => <Placeholder titleKey="errors.notFound" /> });
@@ -25,6 +27,8 @@ const routes = [
     getParentRoute: () => root, path: "/review", component: Review,
     validateSearch: (s: Record<string, unknown>): { space?: string } => (typeof s.space === "string" && /^[0-9a-f-]{36}$/.test(s.space) ? { space: s.space } : {}),
   }),
+  createRoute({ getParentRoute: () => root, path: "/quizzes/$quizId", component: QuizPage }),
+  createRoute({ getParentRoute: () => root, path: "/attempts/$attemptId", component: AttemptPage }),
   createRoute({ getParentRoute: () => root, path: "/settings", component: Settings }),
 ];
 

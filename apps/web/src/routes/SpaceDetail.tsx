@@ -6,6 +6,7 @@ import type { Topic } from "@hub/contracts";
 import { useCreateTopic, useSpace, useUpdateSpace, useUpdateTopic } from "../features/spaces.ts";
 import { Button, Card, ConfirmButton, PageTitle, TextInput } from "../components/ui.tsx";
 import { CardForm } from "../components/CardForm.tsx";
+import { SpaceQuizzes } from "../components/SpaceQuizzes.tsx";
 import { useSpaceCards } from "../features/cards.ts";
 
 function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
@@ -133,6 +134,8 @@ export function SpaceDetailPage() {
           </ul>
         ) : null}
       </Card>
+
+      <SpaceQuizzes spaceId={spaceId} />
     </section>
   );
 }

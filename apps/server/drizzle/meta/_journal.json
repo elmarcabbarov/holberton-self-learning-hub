@@ -50,6 +50,13 @@
       "when": 1793564032794,
       "tag": "0006_cards",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793649894215,
+      "tag": "0007_quiz",
+      "breakpoints": true
     }
   ]
 }
