@@ -232,3 +232,17 @@ export const noteTopics = sqliteTable("note_topics", {
   topicId: text("topic_id").notNull().references(() => topics.id, { onDelete: "cascade" }),
   createdAt: text("created_at").notNull(),
 }, (t) => [primaryKey({ columns: [t.noteId, t.topicId] }), index("note_topics_topic_idx").on(t.topicId)]);
+
+/** Optional study sessions with a skippable three-field reflection (HSLH-027, D-064). */
+export const studySessions = sqliteTable("study_sessions", {
+  id: text("id").primaryKey(),
+  objective: text("objective").notNull().default(""),
+  spaceId: text("space_id").references(() => spaces.id, { onDelete: "set null" }),
+  taskId: text("task_id").references(() => goalTasks.id, { onDelete: "set null" }),
+  startedAt: text("started_at").notNull(),
+  endedAt: text("ended_at"),
+  learned: text("learned"),
+  stuck: text("stuck"),
+  next: text("next"),
+  reflectedAt: text("reflected_at"),
+}, (t) => [index("study_sessions_started_idx").on(t.startedAt)]);

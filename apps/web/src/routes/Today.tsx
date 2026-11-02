@@ -6,6 +6,7 @@ import { NoteList, ReviewSummary } from "@hub/contracts";
 import { apiJson } from "../api.ts";
 import { useSpaces } from "../features/spaces.ts";
 import { Card, PageTitle } from "../components/ui.tsx";
+import { SessionCard } from "../components/SessionCard.tsx";
 
 const primaryLink = "inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-dark";
 const secondaryLink = "inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface";
@@ -27,6 +28,7 @@ export function Today() {
       <PageTitle id="today-title">{t("today.title")}</PageTitle>
       {loading ? <p className="mt-6 text-muted" role="status">{t("common.loading")}</p> : null}
       {failed ? <p role="alert" className="mt-6">{t("errors.loadFailed")}</p> : null}
+      {!loading && !failed ? <SessionCard /> : null}
 
       {nothingYet ? (
         <Card className="mt-8">
