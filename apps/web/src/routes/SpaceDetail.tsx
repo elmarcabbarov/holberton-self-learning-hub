@@ -7,6 +7,8 @@ import { useCreateTopic, useSpace, useUpdateSpace, useUpdateTopic } from "../fea
 import { Button, Card, ConfirmButton, PageTitle, TextInput } from "../components/ui.tsx";
 import { CardForm } from "../components/CardForm.tsx";
 import { SpaceQuizzes } from "../components/SpaceQuizzes.tsx";
+import { SpaceGoals } from "../components/SpaceGoals.tsx";
+import { SpaceNotes } from "../components/NoteTopics.tsx";
 import { useSpaceCards } from "../features/cards.ts";
 
 function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
@@ -138,6 +140,8 @@ export function SpaceDetailPage() {
         ) : null}
       </Card>
 
+      <SpaceGoals spaceId={spaceId} />
+      <SpaceNotes spaceId={spaceId} topicName={(id) => [...space.data.topics, ...space.data.archivedTopics].find((x) => x.id === id)?.name} />
       <SpaceQuizzes spaceId={spaceId} />
     </section>
   );

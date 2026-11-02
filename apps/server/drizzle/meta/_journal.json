@@ -71,6 +71,13 @@
       "when": 1793657108138,
       "tag": "0009_linked_vault",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793658321411,
+      "tag": "0010_goals",
+      "breakpoints": true
     }
   ]
 }
