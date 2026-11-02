@@ -346,6 +346,9 @@
     "resultTitle": "Nəticə",
     "calibration": "Başlamazdan əvvəl demişdin: {label} (5-dən {n}). Bunu yuxarıdakı nəticə ilə müqayisə et.",
     "calibrationSkipped": "Bu cəhddə əminlik sualını ötürmüsən.",
-    "signalNote": "Bir cəhd ölçmə deyil, siqnaldır. Zamanla bir neçə cəhd daha çox şey deyir."
+    "signalNote": "Bir cəhd ölçmə deyil, siqnaldır. Zamanla bir neçə cəhd daha çox şey deyir.",
+    "archivedSummary": "Arxivlənmiş quiz-lər",
+    "archivedLabel": "Arxivlənmiş quiz-lər",
+    "noArchived": "Arxivlənmiş quiz yoxdur."
   }
 }

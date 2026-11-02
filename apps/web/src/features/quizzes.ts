@@ -12,6 +12,9 @@ export const quizKeys = {
 };
 
 export const useSpaceQuizzes = (spaceId: string) => useQuery({ queryKey: quizKeys.bySpace(spaceId), queryFn: () => apiJson(`/api/quizzes?spaceId=${spaceId}`, QuizList) });
+export const useArchivedQuizzes = (spaceId: string, enabled: boolean) => useQuery({
+  queryKey: [...quizKeys.bySpace(spaceId), "archived"], queryFn: () => apiJson(`/api/quizzes?spaceId=${spaceId}&archived=1`, QuizList), enabled,
+});
 export const useQuiz = (id: string) => useQuery({ queryKey: quizKeys.detail(id), queryFn: () => apiJson(`/api/quizzes/${id}`, QuizDetail) });
 export const useAttempts = (quizId: string) => useQuery({ queryKey: quizKeys.attempts(quizId), queryFn: () => apiJson(`/api/quizzes/${quizId}/attempts`, AttemptList) });
 export const useAttempt = (id: string) => useQuery({ queryKey: quizKeys.attempt(id), queryFn: () => apiJson(`/api/attempts/${id}`, Attempt), refetchOnWindowFocus: false });

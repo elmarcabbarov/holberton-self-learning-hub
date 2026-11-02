@@ -80,3 +80,16 @@ test("practice: feedback after each question, answer locks", async ({ page }) =>
   await expect(page.getByText("1 of 2 correct", { exact: true })).toBeVisible();
   await expect(page.getByText("You skipped the confidence question for this attempt.")).toBeVisible();
 });
+
+test("an archived quiz stays reachable from its space and can be restored", async ({ page }) => {
+  const stamp = Date.now();
+  await makeQuiz(page, stamp);
+  await page.getByRole("button", { name: "Archive quiz" }).click();
+  await page.getByRole("button", { name: "Click again to archive" }).click();
+  await expect(page.getByRole("list", { name: "Quizzes in this space" })).toHaveCount(0);
+  await page.getByText("Archived quizzes").click();
+  await page.getByRole("list", { name: "Archived quizzes" }).getByRole("link", { name: `Processes check ${stamp}` }).click();
+  await expect(page.getByText("This quiz is archived. Its attempts are kept.")).toBeVisible();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+});

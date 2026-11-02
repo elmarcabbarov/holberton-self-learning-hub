@@ -346,6 +346,9 @@
     "resultTitle": "Result",
     "calibration": "Before you started you said: {label} ({n} of 5). Compare that with the result above.",
     "calibrationSkipped": "You skipped the confidence question for this attempt.",
-    "signalNote": "One attempt is a signal, not a measurement. A few more attempts over time tell you more."
+    "signalNote": "One attempt is a signal, not a measurement. A few more attempts over time tell you more.",
+    "archivedSummary": "Archived quizzes",
+    "archivedLabel": "Archived quizzes",
+    "noArchived": "No archived quizzes."
   }
 }

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, isNull, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull, max } from "drizzle-orm";
 import { AnswerKey, MAX_QUESTIONS, type QuestionType, type QuizMode, type Response, type UpdateQuiz } from "@hub/contracts";
 import { z } from "zod";
 import type { Db } from "../../lib/db/index.ts";
@@ -66,8 +66,8 @@ export function createQuiz(db: Db, input: { topicId: string | null; title: strin
   return { kind: "created" as const, quiz: quizToApi(db, row) };
 }
 
-export function listQuizzes(db: Db, filter: { topicId?: string; spaceId?: string }) {
-  const conds = [isNull(quizzes.archivedAt)];
+export function listQuizzes(db: Db, filter: { topicId?: string; spaceId?: string; archived?: boolean }) {
+  const conds = [filter.archived ? isNotNull(quizzes.archivedAt) : isNull(quizzes.archivedAt)];
   if (filter.topicId) conds.push(eq(quizzes.topicId, filter.topicId));
   if (filter.spaceId) conds.push(eq(topics.spaceId, filter.spaceId));
   return db.select({ quiz: quizzes }).from(quizzes).leftJoin(topics, eq(topics.id, quizzes.topicId))
@@ -182,7 +182,7 @@ export function answerQuestion(db: Db, attemptId: string, questionId: string, r:
     if (attempt.finishedAt) return { kind: "finished" };
     const where = and(eq(quizAnswers.attemptId, attemptId), eq(quizAnswers.questionId, questionId));
     // Exam: an empty response clears the saved one (all boxes unticked, text erased).
-    if (attempt.mode === "exam" && isEmptyResponse(r)) {
+    if (attempt.mode === "exam" && isEmptyResponse(r) && ("text" in r) === (q.type === "short_self")) {
       tx.delete(quizAnswers).where(where).run();
       return { kind: "saved", attempt };
     }

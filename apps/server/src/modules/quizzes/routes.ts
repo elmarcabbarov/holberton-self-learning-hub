@@ -8,7 +8,7 @@ import * as svc from "./service.ts";
 
 const err = (reply: FastifyReply, status: number, code: string, messageKey: string) => reply.code(status).send({ error: { code, messageKey } });
 const notFound = (reply: FastifyReply) => err(reply, 404, "not_found", "errors.notFound");
-const Filter = z.object({ topicId: z.string().uuid().optional(), spaceId: z.string().uuid().optional() });
+const Filter = z.object({ topicId: z.string().uuid().optional(), spaceId: z.string().uuid().optional(), archived: z.literal("1").optional() });
 const AnswerParams = z.object({ id: z.string().uuid(), questionId: z.string().uuid() });
 
 export async function registerQuizRoutes(app: FastifyInstance, database: DatabaseHandle): Promise<void> {
@@ -17,7 +17,7 @@ export async function registerQuizRoutes(app: FastifyInstance, database: Databas
   app.get("/api/quizzes", async (req, reply) => {
     const f = Filter.safeParse(req.query ?? {});
     if (!f.success) return err(reply, 400, "validation_failed", "errors.validation");
-    return QuizList.parse({ quizzes: svc.listQuizzes(db, { ...(f.data.topicId ? { topicId: f.data.topicId } : {}), ...(f.data.spaceId ? { spaceId: f.data.spaceId } : {}) }) });
+    return QuizList.parse({ quizzes: svc.listQuizzes(db, { ...(f.data.topicId ? { topicId: f.data.topicId } : {}), ...(f.data.spaceId ? { spaceId: f.data.spaceId } : {}), archived: f.data.archived === "1" }) });
   });
 
   app.post("/api/quizzes", async (req, reply) => {

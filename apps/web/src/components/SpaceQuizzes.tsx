@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useSpace } from "../features/spaces.ts";
-import { useCreateQuiz, useSpaceQuizzes } from "../features/quizzes.ts";
+import { useArchivedQuizzes, useCreateQuiz, useSpaceQuizzes } from "../features/quizzes.ts";
 import { Button, Card, TextInput } from "./ui.tsx";
 
 const field = "h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px] text-fg";
@@ -16,6 +16,8 @@ export function SpaceQuizzes({ spaceId }: { spaceId: string }) {
   const create = useCreateQuiz();
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const archived = useArchivedQuizzes(spaceId, showArchived);
   const topics = space.data?.topics ?? [];
   const topicId = topic || topics[0]?.id || "";
 
@@ -53,6 +55,17 @@ export function SpaceQuizzes({ spaceId }: { spaceId: string }) {
           ))}
         </ul>
       ) : null}
+      <details className="mt-4" onToggle={(e) => setShowArchived(e.currentTarget.open)}>
+        <summary className="cursor-pointer text-[14px] text-muted">{t("quizzes.archivedSummary")}</summary>
+        {archived.isPending && showArchived ? <p className="mt-2 text-[14px] text-muted" role="status">{t("common.loading")}</p> : null}
+        {archived.data ? (archived.data.quizzes.length === 0 ? <p className="mt-2 text-[14px] text-muted">{t("quizzes.noArchived")}</p> : (
+          <ul className="mt-2 divide-y divide-line" aria-label={t("quizzes.archivedLabel")}>
+            {archived.data.quizzes.map((q) => (
+              <li key={q.id} className="py-2"><Link to="/quizzes/$quizId" params={{ quizId: q.id }} className="text-muted underline decoration-line underline-offset-4 hover:text-fg">{q.title}</Link></li>
+            ))}
+          </ul>
+        )) : null}
+      </details>
     </Card>
   );
 }

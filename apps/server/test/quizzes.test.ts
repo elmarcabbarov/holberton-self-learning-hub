@@ -73,6 +73,10 @@ describe("quizzes API", () => {
     // An empty response clears a saved exam answer.
     await answer(a.id, qs[1].id, { selected: [0] });
     expect(Attempt.parse((await answer(a.id, qs[1].id, { selected: [] })).json()).items[1]!.response).toBeNull();
+    // An empty response of the wrong shape never clears another type's answer.
+    expect((await answer(a.id, qs[0].id, { text: "" })).statusCode).toBe(400);
+    expect((await answer(a.id, qs[2].id, { selected: [] })).statusCode).toBe(400);
+    expect(Attempt.parse((await t.req({ method: "GET", url: `/api/attempts/${a.id}` })).json()).items.map((i) => i.response !== null)).toEqual([true, false, true]);
     // Grading a short answer is refused while the reference is hidden.
     expect((await t.req({ method: "POST", url: `/api/attempts/${a.id}/answers/${qs[2].id}/grade`, payload: { correct: true } })).statusCode).toBe(409);
 
@@ -155,6 +159,8 @@ describe("quizzes API", () => {
     expect((await t.req({ method: "PATCH", url: `/api/quizzes/${quiz.id}`, payload: { archived: true } })).statusCode).toBe(200);
     expect((await t.req({ method: "POST", url: `/api/quizzes/${quiz.id}/attempts`, payload: { mode: "exam" } })).statusCode).toBe(409);
     expect(QuizList.parse((await t.req({ method: "GET", url: `/api/quizzes?spaceId=${space.id}` })).json()).quizzes).toEqual([]);
+    const archived = QuizList.parse((await t.req({ method: "GET", url: `/api/quizzes?spaceId=${space.id}&archived=1` })).json()).quizzes;
+    expect(archived.map((q) => q.id)).toEqual([quiz.id]);
     expect((await t.req({ method: "GET", url: `/api/attempts/${a.id}` })).statusCode).toBe(200);
   });
 

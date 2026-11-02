@@ -29,7 +29,8 @@ function ItemCard({ attempt, item, n, draft, setDraft }: {
   const grade = useGrade(attempt.id);
   const exam = attempt.mode === "exam";
   const locked = !!attempt.finishedAt || (!exam && item.feedback !== null);
-  const current = draft ?? item.response ?? undefined;
+  // Once locked, show what the server recorded, never a local edit made while the check was in flight.
+  const current = locked ? item.response ?? undefined : draft ?? item.response ?? undefined;
   const selected = current && "selected" in current ? current.selected : [];
   const fb = item.feedback;
   const key = fb && "correct" in fb.answer ? fb.answer.correct : [];
@@ -45,7 +46,7 @@ function ItemCard({ attempt, item, n, draft, setDraft }: {
   return (
     <li>
       <Card>
-        <fieldset disabled={locked}>
+        <fieldset disabled={locked || (!exam && answer.isPending)}>
           <legend className="flex gap-3 text-[17px] leading-snug">
             <span className="shrink-0 text-muted tabular-nums">{n}.</span>
             <span className="whitespace-pre-wrap">{item.prompt}</span>
@@ -95,11 +96,12 @@ function ItemCard({ attempt, item, n, draft, setDraft }: {
                 {item.response ? (
                   <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={t("quizzes.selfGrade")}>
                     <span className="text-[14px]">{t("quizzes.selfGrade")}</span>
-                    <Button aria-pressed={fb.correct === true} variant={fb.correct === true ? "primary" : "secondary"} disabled={grade.isPending}
-                      onClick={() => grade.mutate({ questionId: item.id, correct: true })}>{t("quizzes.gotIt")}</Button>
-                    <Button aria-pressed={fb.correct === false} disabled={grade.isPending}
-                      className={fb.correct === false ? "border-fg" : ""}
-                      onClick={() => grade.mutate({ questionId: item.id, correct: false })}>{t("quizzes.missedIt")}</Button>
+                    {([true, false] as const).map((v) => (
+                      <Button key={String(v)} aria-pressed={fb.correct === v} disabled={grade.isPending}
+                        className={fb.correct === v ? "border-fg" : ""} onClick={() => grade.mutate({ questionId: item.id, correct: v })}>
+                        {fb.correct === v ? <Check size={16} aria-hidden /> : null}{v ? t("quizzes.gotIt") : t("quizzes.missedIt")}
+                      </Button>
+                    ))}
                   </div>
                 ) : <p className="mt-3 text-[13px] text-muted">{t("quizzes.notAnswered")}</p>}
               </>
