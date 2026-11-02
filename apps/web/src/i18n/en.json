@@ -489,5 +489,61 @@
     "alreadyOpen": "A session is already running.",
     "stillOpen": "Stop the session before reflecting.",
     "badRef": "That space or task does not exist."
+  },
+  "ai": {
+    "title": "AI",
+    "intro": "Optional. The Hub works fully without AI. When you turn it on, you choose where requests go: a model on your own machine (Ollama, LM Studio) or a cloud service with your own key.",
+    "form": "AI settings",
+    "mode": "Provider",
+    "modes": {
+      "disabled": "Off",
+      "openai_compatible": "OpenAI-compatible (Ollama, LM Studio, OpenRouter …)",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "baseUrl": "Server address",
+    "presets": "Common addresses",
+    "model": "Model name",
+    "key": "API key",
+    "keyOptional": "API key (if the server needs one)",
+    "keyStored": "Key saved ({mask}). Type a new one to replace it.",
+    "clearKey": "Remove the saved key",
+    "keyEncrypted": "Saved encrypted on this server (HUB_SECRET_KEY is set). It is never shown again and is not in backups.",
+    "keyPlain": "Saved on this server without encryption, readable by anyone with access to the data folder. Set HUB_SECRET_KEY to encrypt it. It is never shown again and is not in backups.",
+    "remoteNote": "Requests to this provider leave your machine. Only what an AI feature sends goes there, and each feature asks before sending your notes.",
+    "ready": "Ready: {model}.",
+    "notReady": "Not ready: fill in the model, and the key if the provider needs one.",
+    "testNote": "The test sends three tiny fixed prompts. With a cloud provider this is a paid request; a local model may take a while to load.",
+    "test": "Test the model",
+    "testing": "Testing…",
+    "results": "Test results",
+    "capability": {
+      "text": "Text",
+      "structured": "Structured answer",
+      "tools": "Tool call"
+    },
+    "passed": "works ({ms} ms)",
+    "failed": "failed: {reason}",
+    "error": {
+      "unreachable": "could not reach the server",
+      "auth": "the key was refused",
+      "rate_limited": "rate limited, try later",
+      "context_overflow": "request too long",
+      "schema_invalid": "answer did not match the format",
+      "refused": "the model refused",
+      "timeout": "timed out",
+      "cancelled": "cancelled",
+      "capability_missing": "not supported by this model",
+      "unknown": "unknown error"
+    },
+    "conflict": "These settings were changed elsewhere. The form now shows the latest version.",
+    "busy": "A test is already running or just ran. Try again in a few seconds.",
+    "invalid": {
+      "invalid_url": "That address is not a valid URL.",
+      "bad_scheme": "The address must start with http:// or https://.",
+      "credentials_in_url": "Put the key in the key field, not in the address.",
+      "query_not_allowed": "The address must not contain ? or #.",
+      "mode": "That provider is not available."
+    },
+    "notReadyError": "Finish the AI settings first."
   }
 }

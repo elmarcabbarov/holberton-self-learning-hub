@@ -23,7 +23,11 @@ export default tseslint.config(
       "boundaries/elements": [
         { type: "contracts", pattern: "packages/contracts", partialMatch: false },
         { type: "server-ai", pattern: "apps/server/src/modules/ai", partialMatch: false },
+        // Composition root: the only server code that may wire optional modules in (ADR-007).
+        { type: "server-root", pattern: "apps/server/src/compose", partialMatch: false },
         { type: "server-research", pattern: "apps/server/src/modules/research", partialMatch: false },
+        // Server tests may exercise optional modules directly.
+        { type: "server-test", pattern: "apps/server/test", partialMatch: false },
         { type: "server", pattern: "apps/server", partialMatch: false },
         { type: "web", pattern: "apps/web", partialMatch: false },
         { type: "e2e", pattern: "e2e", partialMatch: false }
@@ -36,7 +40,9 @@ export default tseslint.config(
         policies: [
           allow("contracts", ["contracts"]),
           allow("web", ["web", "contracts"]),
-          allow("server", ["server", "contracts"]),
+          allow("server", ["server", "server-root", "contracts"]),
+          allow("server-root", ["server", "server-ai", "contracts"]),
+          allow("server-test", ["server-test", "server", "server-root", "server-ai", "server-research", "contracts"]),
           allow("server-ai", ["server-ai", "server", "contracts"]),
           allow("server-research", ["server-research", "server-ai", "server", "contracts"]),
           allow("e2e", ["e2e", "contracts"])
@@ -47,9 +53,9 @@ export default tseslint.config(
   {
     // Core server code must not reach into optional AI/research modules.
     files: ["apps/server/src/**/*.ts"],
-    ignores: ["apps/server/src/modules/ai/**", "apps/server/src/modules/research/**", "apps/server/src/app.ts"],
+    ignores: ["apps/server/src/modules/ai/**", "apps/server/src/modules/research/**", "apps/server/src/compose/**", "apps/server/src/app.ts"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: [{ group: ["**/modules/ai/**", "**/modules/research/**"], message: "Core must not depend on AI/research (ADR-007)." }] }]
+      "no-restricted-imports": ["error", { patterns: [{ group: ["**/modules/ai/**", "**/modules/research/**", "**/compose/**"], message: "Core must not depend on AI/research or the composition root (ADR-007)." }] }]
     }
   },
   {

@@ -489,5 +489,61 @@
     "alreadyOpen": "Artıq açıq sessiya var.",
     "stillOpen": "Refleksiyadan əvvəl sessiyanı bitir.",
     "badRef": "Belə sahə və ya tapşırıq yoxdur."
+  },
+  "ai": {
+    "title": "AI",
+    "intro": "İstəyə bağlıdır. Hub AI olmadan tam işləyir. Aktiv etsən, sorğuların hara gedəcəyini sən seçirsən: öz kompüterindəki model (Ollama, LM Studio) və ya öz açarınla cloud xidməti.",
+    "form": "AI ayarları",
+    "mode": "Provayder",
+    "modes": {
+      "disabled": "Söndürülüb",
+      "openai_compatible": "OpenAI-uyğun (Ollama, LM Studio, OpenRouter …)",
+      "anthropic": "Anthropic (Claude)"
+    },
+    "baseUrl": "Server ünvanı",
+    "presets": "Tez-tez istifadə olunan ünvanlar",
+    "model": "Model adı",
+    "key": "API açarı",
+    "keyOptional": "API açarı (server tələb edirsə)",
+    "keyStored": "Açar saxlanılıb ({mask}). Dəyişmək üçün yenisini yaz.",
+    "clearKey": "Saxlanmış açarı sil",
+    "keyEncrypted": "Bu serverdə şifrələnmiş saxlanılır (HUB_SECRET_KEY təyin olunub). Bir daha göstərilmir və backup-a düşmür.",
+    "keyPlain": "Bu serverdə şifrəsiz saxlanılır, data qovluğuna girişi olan hər kəs oxuya bilər. Şifrələmək üçün HUB_SECRET_KEY təyin et. Bir daha göstərilmir və backup-a düşmür.",
+    "remoteNote": "Bu provayderə gedən sorğular kompüterindən çıxır. Yalnız AI funksiyasının göndərdiyi gedir və hər funksiya qeydlərini göndərməzdən əvvəl soruşur.",
+    "ready": "Hazırdır: {model}.",
+    "notReady": "Hazır deyil: model adını, provayder tələb edirsə açarı da doldur.",
+    "testNote": "Test üç kiçik sabit sorğu göndərir. Cloud provayderdə bu ödənişli sorğudur; lokal modelin yüklənməsi bir az vaxt ala bilər.",
+    "test": "Modeli yoxla",
+    "testing": "Yoxlanılır…",
+    "results": "Test nəticələri",
+    "capability": {
+      "text": "Mətn",
+      "structured": "Strukturlu cavab",
+      "tools": "Alət çağırışı"
+    },
+    "passed": "işləyir ({ms} ms)",
+    "failed": "alınmadı: {reason}",
+    "error": {
+      "unreachable": "serverə qoşulmaq olmadı",
+      "auth": "açar rədd edildi",
+      "rate_limited": "limit aşıldı, sonra yenidən yoxla",
+      "context_overflow": "sorğu çox uzundur",
+      "schema_invalid": "cavab formata uyğun gəlmədi",
+      "refused": "model imtina etdi",
+      "timeout": "vaxt bitdi",
+      "cancelled": "ləğv edildi",
+      "capability_missing": "bu model dəstəkləmir",
+      "unknown": "naməlum xəta"
+    },
+    "conflict": "Bu ayarlar başqa yerdə dəyişdirilib. Forma indi son versiyanı göstərir.",
+    "busy": "Test artıq gedir və ya indicə bitib. Bir neçə saniyədən sonra yenidən yoxla.",
+    "invalid": {
+      "invalid_url": "Bu ünvan düzgün URL deyil.",
+      "bad_scheme": "Ünvan http:// və ya https:// ilə başlamalıdır.",
+      "credentials_in_url": "Açarı ünvana yox, açar sahəsinə yaz.",
+      "query_not_allowed": "Ünvanda ? və ya # olmamalıdır.",
+      "mode": "Bu provayder mövcud deyil."
+    },
+    "notReadyError": "Əvvəlcə AI ayarlarını tamamla."
   }
 }

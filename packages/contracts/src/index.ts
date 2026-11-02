@@ -10,3 +10,4 @@ export * from "./quizzes.ts";
 export * from "./vault-import.ts";
 export * from "./goals.ts";
 export * from "./sessions.ts";
+export * from "./ai.ts";

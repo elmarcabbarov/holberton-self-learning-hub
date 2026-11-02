@@ -15,6 +15,7 @@ import { registerImportRoutes } from "./modules/import/routes.ts";
 import { registerQuizRoutes } from "./modules/quizzes/routes.ts";
 import { registerGoalRoutes } from "./modules/goals/routes.ts";
 import { registerSessionRoutes } from "./modules/sessions/routes.ts";
+import { wireAI } from "./compose/ai.ts";
 import { restorePending } from "./modules/backup/restore.ts";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { realpath } from "node:fs/promises";
@@ -33,7 +34,10 @@ declare module "fastify" {
   }
 }
 
-export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
+/** Test seams: an injected fetch keeps AI provider tests off the network. */
+export interface AppDeps { aiFetch?: typeof fetch; aiResolve?: (host: string) => Promise<{ address: string }[]> }
+
+export async function buildApp(config: HubConfig, deps: AppDeps = {}): Promise<FastifyInstance> {
   const app = Fastify({
     trustProxy: false,
     logger: { level: process.env.LOG_LEVEL ?? "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
@@ -97,6 +101,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerQuizRoutes(app, database);
   await registerGoalRoutes(app, database);
   await registerSessionRoutes(app, database);
+  await wireAI(app, database, config, { ...(deps.aiFetch ? { fetch: deps.aiFetch } : {}), ...(deps.aiResolve ? { resolve: deps.aiResolve } : {}) });
   await registerImportRoutes(app, database, vault);
   await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
   await registerVaultRoutes(app, vault, database, linked);
