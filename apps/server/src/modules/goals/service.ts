@@ -10,7 +10,7 @@ const now = () => new Date().toISOString();
 
 function toApi(db: Db, row: GoalRow): Goal {
   const tasks = db.select().from(goalTasks).where(eq(goalTasks.goalId, row.id)).orderBy(asc(goalTasks.position), asc(goalTasks.createdAt)).all()
-    .map((t) => ({ id: t.id, text: t.text, done: t.doneAt !== null, doneAt: t.doneAt }));
+    .map((t) => ({ id: t.id, text: t.text, done: t.done, doneAt: t.doneAt }));
   return { ...row, tasks, progress: { done: tasks.filter((t) => t.done).length, total: tasks.length } };
 }
 
@@ -62,7 +62,7 @@ export function addTask(db: Db, goalId: string, text: string) {
     if (goal.archivedAt) return { kind: "archived" as const };
     const n = tx.select({ n: count(), top: max(goalTasks.position) }).from(goalTasks).where(eq(goalTasks.goalId, goalId)).get();
     if ((n?.n ?? 0) >= GOAL_LIMITS.tasksPerGoal) return { kind: "too_many" as const };
-    tx.insert(goalTasks).values({ id: randomUUID(), goalId, text, position: (n?.top ?? -1) + 1, doneAt: null, createdAt: now() }).run();
+    tx.insert(goalTasks).values({ id: randomUUID(), goalId, text, position: (n?.top ?? -1) + 1, done: false, doneAt: null, createdAt: now() }).run();
     tx.update(goals).set({ updatedAt: now() }).where(eq(goals.id, goalId)).run();
     return { kind: "ok" as const, goal: toApi(tx as unknown as Db, tx.select().from(goals).where(eq(goals.id, goal.id)).get()!) };
   }, IMMEDIATE);
@@ -76,8 +76,8 @@ export function updateTask(db: Db, taskId: string, input: UpdateTask) {
     if (goal.archivedAt) return { kind: "archived" as const };
     tx.update(goalTasks).set({
       ...(input.text !== undefined ? { text: input.text } : {}),
-      // Checking an already-done task keeps its original time.
-      ...(input.done !== undefined ? { doneAt: input.done ? (task.doneAt ?? now()) : null } : {}),
+      // doneAt is the first completion: unchecking and checking again keeps it.
+      ...(input.done !== undefined ? { done: input.done, doneAt: input.done ? (task.doneAt ?? now()) : task.doneAt } : {}),
     }).where(eq(goalTasks.id, taskId)).run();
     tx.update(goals).set({ updatedAt: now() }).where(eq(goals.id, goal.id)).run();
     return { kind: "ok" as const, goal: toApi(tx as unknown as Db, tx.select().from(goals).where(eq(goals.id, goal.id)).get()!) };
@@ -154,3 +154,6 @@ export function spaceNotes(db: Db, spaceId: string) {
   }
   return [...byNote.values()];
 }
+
+export const noteExists = (db: Db, id: string) => db.select({ id: notes.id }).from(notes).where(eq(notes.id, id)).get() !== undefined;
+export const spaceExists = (db: Db, id: string) => db.select({ id: spaces.id }).from(spaces).where(eq(spaces.id, id)).get() !== undefined;

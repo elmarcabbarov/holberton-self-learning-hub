@@ -8,6 +8,7 @@ const Title = z.string().trim().min(1).max(200);
 const Criteria = z.string().trim().max(2000);
 const TaskText = z.string().trim().min(1).max(500);
 
+/** `doneAt` is the first time the task was checked; it survives unchecking. */
 export const GoalTask = z.object({ id: Id, text: z.string(), done: z.boolean(), doneAt: z.string().nullable() });
 export type GoalTask = z.infer<typeof GoalTask>;
 

@@ -85,7 +85,7 @@ export async function registerGoalRoutes(app: FastifyInstance, database: Databas
 
   app.get("/api/notes/:id/topics", async (req, reply) => {
     const p = IdParam.safeParse(req.params);
-    if (!p.success) return notFound(reply);
+    if (!p.success || !svc.noteExists(db, p.data.id)) return notFound(reply);
     return TopicRefList.parse({ topics: svc.noteTopicRefs(db, p.data.id) });
   });
 
@@ -102,7 +102,7 @@ export async function registerGoalRoutes(app: FastifyInstance, database: Databas
 
   app.get("/api/spaces/:id/notes", async (req, reply) => {
     const p = IdParam.safeParse(req.params);
-    if (!p.success) return notFound(reply);
+    if (!p.success || !svc.spaceExists(db, p.data.id)) return notFound(reply);
     return SpaceNoteList.parse({ notes: svc.spaceNotes(db, p.data.id) });
   });
 }

@@ -126,7 +126,7 @@ function GoalItem({ goal }: { goal: Goal }) {
             <p className="mt-0.5 text-[13px] text-muted">{t("goals.progress", { done: goal.progress.done, total: goal.progress.total })}</p>
             {goal.criteria ? <p className="mt-2 max-w-prose whitespace-pre-wrap text-[14px]"><span className="text-muted">{t("goals.criteriaShort")} </span>{goal.criteria}</p> : null}
           </div>
-          <Button variant="ghost" aria-label={t("goals.edit", { name: goal.title })} onClick={() => setEditing(true)}><Pencil size={16} aria-hidden /></Button>
+          <Button variant="ghost" aria-label={t("goals.edit", { name: goal.title })} onClick={() => { setTitle(goal.title); setCriteria(goal.criteria); setEditing(true); }}><Pencil size={16} aria-hidden /></Button>
           <ConfirmButton
             ariaLabel={t("goals.archive", { name: goal.title })}
             confirmAriaLabel={t("goals.archiveConfirm", { name: goal.title })}

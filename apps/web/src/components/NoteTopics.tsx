@@ -13,7 +13,8 @@ export function NoteTopics({ noteId }: { noteId: string }) {
   const set = useSetNoteTopics(noteId);
   const [pick, setPick] = useState("");
   const ids = linked.data?.topics.map((x) => x.id) ?? [];
-  const options = (all.data?.topics ?? []).filter((x) => !ids.includes(x.id));
+  // Changes replace the whole set: only offer them once the current links are known.
+  const options = linked.isSuccess ? (all.data?.topics ?? []).filter((x) => !ids.includes(x.id)) : [];
 
   return (
     <div>
@@ -30,7 +31,7 @@ export function NoteTopics({ noteId }: { noteId: string }) {
         </ul>
       ) : linked.isSuccess ? <p className="mt-2 text-[13px] text-muted">{t("editor.none")}</p> : null}
       {options.length > 0 ? (
-        <select aria-label={t("noteTopics.add")} value={pick} disabled={set.isPending}
+        <select aria-label={t("noteTopics.add")} value={pick} disabled={set.isPending || !linked.isSuccess}
           onChange={(e) => { const id = e.target.value; setPick(""); if (id) set.mutate([...ids, id]); }}
           className="mt-2 h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-2 text-[14px]">
           <option value="">{t("noteTopics.add")}</option>

@@ -220,6 +220,8 @@ export const goalTasks = sqliteTable("goal_tasks", {
   goalId: text("goal_id").notNull().references(() => goals.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
   position: integer("position").notNull(),
+  done: integer("done", { mode: "boolean" }).notNull().default(false),
+  /** First time the task was checked; kept when it is unchecked and checked again (D-063). */
   doneAt: text("done_at"),
   createdAt: text("created_at").notNull(),
 }, (t) => [index("goal_tasks_goal_idx").on(t.goalId, t.position)]);

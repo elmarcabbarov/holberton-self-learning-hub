@@ -3,6 +3,7 @@ CREATE TABLE `goal_tasks` (
 	`goal_id` text NOT NULL,
 	`text` text NOT NULL,
 	`position` integer NOT NULL,
+	`done` integer DEFAULT false NOT NULL,
 	`done_at` text,
 	`created_at` text NOT NULL,
 	FOREIGN KEY (`goal_id`) REFERENCES `goals`(`id`) ON UPDATE no action ON DELETE cascade

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3a6b6565-1499-442b-808e-fe81aef0902c",
+  "id": "62786af7-2693-46c7-87d2-145735ea5b67",
   "prevId": "0501677d-bc1d-40fc-b6ee-1625b8b37932",
   "tables": {
     "app_meta": {
@@ -437,6 +437,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "done": {
+          "name": "done",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "done_at": {
           "name": "done_at",

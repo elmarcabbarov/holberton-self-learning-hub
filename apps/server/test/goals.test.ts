@@ -28,6 +28,11 @@ describe("goals", () => {
     const doneAt = checked.tasks[0]!.doneAt;
     const again = Goal.parse((await t.req({ method: "PATCH", url: `/api/tasks/${two.tasks[0]!.id}`, payload: { done: true } })).json());
     expect(again.tasks[0]!.doneAt).toBe(doneAt); // re-checking keeps the original time
+    const unchecked = Goal.parse((await t.req({ method: "PATCH", url: `/api/tasks/${two.tasks[0]!.id}`, payload: { done: false } })).json());
+    expect(unchecked.tasks[0]).toMatchObject({ done: false, doneAt });
+    expect(unchecked.progress.done).toBe(0);
+    const rechecked = Goal.parse((await t.req({ method: "PATCH", url: `/api/tasks/${two.tasks[0]!.id}`, payload: { done: true } })).json());
+    expect(rechecked.tasks[0]!.doneAt).toBe(doneAt); // first completion survives unchecking
     const list = GoalList.parse((await t.req({ method: "GET", url: `/api/spaces/${spaceId}/goals` })).json());
     expect(list.goals).toHaveLength(1);
   });
@@ -88,5 +93,7 @@ describe("note ↔ topic links", () => {
     expect(cleared.topics).toEqual([]);
     expect((await t.req({ method: "PUT", url: `/api/notes/${note.id}/topics`, payload: { topicIds: ["00000000-0000-4000-8000-000000000000"] } })).statusCode).toBe(400);
     expect((await t.req({ method: "PUT", url: "/api/notes/00000000-0000-4000-8000-000000000000/topics", payload: { topicIds: [] } })).statusCode).toBe(404);
+    expect((await t.req({ method: "GET", url: "/api/notes/00000000-0000-4000-8000-000000000000/topics" })).statusCode).toBe(404);
+    expect((await t.req({ method: "GET", url: "/api/spaces/00000000-0000-4000-8000-000000000000/notes" })).statusCode).toBe(404);
   });
 });

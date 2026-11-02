@@ -26,26 +26,34 @@ export const useUpdateGoal = (goalId: string) => useGoalMutation(goalId, (input:
   apiJson(`/api/goals/${goalId}`, Goal, { method: "PATCH", body: input }));
 export const useAddTask = (goalId: string) => useGoalMutation(goalId, (text: string) =>
   apiJson(`/api/goals/${goalId}/tasks`, Goal, { method: "POST", body: { text } }));
+function patchTask(qc: ReturnType<typeof useQueryClient>, goalId: string, id: string, change: { done?: boolean; text?: string }) {
+  qc.setQueriesData<GoalListType>({ queryKey: goalKeys.all }, (list) => list && {
+    goals: list.goals.map((g) => {
+      if (g.id !== goalId) return g;
+      const tasks = g.tasks.map((x) => (x.id !== id ? x : { ...x, ...change }));
+      return { ...g, tasks, progress: { done: tasks.filter((x) => x.done).length, total: tasks.length } };
+    }),
+  });
+}
+
 /** Checking a task updates the list at once (the checkbox must not wait for the server); errors roll back. */
 export function useUpdateTask(goalId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...input }: { id: string; text?: string; done?: boolean }) => apiJson(`/api/tasks/${id}`, Goal, { method: "PATCH", body: input }),
     scope: { id: `goal:${goalId}` },
+    mutationKey: ["goal-task", goalId],
     onMutate: async ({ id, done, text }) => {
       await qc.cancelQueries({ queryKey: goalKeys.all });
-      const before = qc.getQueriesData<GoalListType>({ queryKey: goalKeys.all });
-      qc.setQueriesData<GoalListType>({ queryKey: goalKeys.all }, (list) => list && {
-        goals: list.goals.map((g) => {
-          if (g.id !== goalId) return g;
-          const tasks = g.tasks.map((x) => (x.id !== id ? x : { ...x, ...(text !== undefined ? { text } : {}), ...(done !== undefined ? { done, doneAt: done ? (x.doneAt ?? new Date().toISOString()) : null } : {}) }));
-          return { ...g, tasks, progress: { done: tasks.filter((x) => x.done).length, total: tasks.length } };
-        }),
-      });
-      return { before };
+      const prior = qc.getQueriesData<GoalListType>({ queryKey: goalKeys.all })
+        .flatMap(([, list]) => list?.goals ?? []).find((g) => g.id === goalId)?.tasks.find((x) => x.id === id);
+      patchTask(qc, goalId, id, { ...(text !== undefined ? { text } : {}), ...(done !== undefined ? { done } : {}) });
+      return { prior };
     },
-    onError: (_e, _v, ctx) => { for (const [key, data] of ctx?.before ?? []) qc.setQueryData(key, data); },
-    onSettled: () => qc.invalidateQueries({ queryKey: goalKeys.all }),
+    // Roll back only this task, so other pending checks keep their optimistic state.
+    onError: (_e, { id }, ctx) => { if (ctx?.prior) patchTask(qc, goalId, id, { done: ctx.prior.done, text: ctx.prior.text }); },
+    // Refetch once the last queued change of this goal has settled; earlier refetches would undo later optimistic checks.
+    onSettled: () => { if (qc.isMutating({ mutationKey: ["goal-task", goalId] }) <= 1) void qc.invalidateQueries({ queryKey: goalKeys.all }); },
   });
 }
 export const useDeleteTask = (goalId: string) => useGoalMutation(goalId, (id: string) =>
