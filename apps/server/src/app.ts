@@ -19,6 +19,8 @@ import { acquireLock } from "./lib/lockfile.ts";
 import { Vault } from "./modules/vault/service.ts";
 import { registerVaultRoutes } from "./modules/vault/routes.ts";
 import { startWatching } from "./modules/vault/watcher.ts";
+import { VaultImporter } from "./modules/vault-import/service.ts";
+import { registerVaultImportRoutes } from "./modules/vault-import/routes.ts";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -43,6 +45,8 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   const vault = new Vault(database.db, join(config.dataDir, "vault"), database.sqlite);
   await vault.init();
   app.decorate("vault", vault);
+  const importer = new VaultImporter(database.db, vault, config.dataDir, config.importDir);
+  await importer.init();
   const stopWatching = config.watchVault
     ? startWatching(vault, { polling: config.vaultPolling, log: (m) => app.log.warn(m) })
     : async () => undefined;
@@ -56,6 +60,16 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   });
   pruneAuth(database.db);
 
+  // Set before any route or plugin registers: an awaited register builds the routes declared so far.
+  // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.
+  app.setErrorHandler((error: { statusCode?: number; code?: string }, req, reply) => {
+    const status = error.statusCode ?? 500;
+    if (status === 413) return reply.code(413).send({ error: { code: "payload_too_large", messageKey: "errors.payloadTooLarge" } });
+    if (status >= 400 && status < 500) return reply.code(status).send({ error: { code: "validation_failed", messageKey: "errors.validation" } });
+    req.log.error(error);
+    return reply.code(500).send({ error: { code: "internal", messageKey: "errors.internal" } });
+  });
+
   registerGuards(app, config);
   await app.register(fastifyCookie);
   await registerAuth(app, database);
@@ -65,15 +79,7 @@ export async function buildApp(config: HubConfig): Promise<FastifyInstance> {
   await registerImportRoutes(app, database, vault);
   await registerBackupRoutes(app, { database, vault, dataDir: config.dataDir, appVersion: config.version });
   await registerVaultRoutes(app, vault, database);
-
-  // Framework errors (body too large, bad JSON) use the same contract envelope as route errors.
-  app.setErrorHandler((error: { statusCode?: number; code?: string }, req, reply) => {
-    const status = error.statusCode ?? 500;
-    if (status === 413) return reply.code(413).send({ error: { code: "payload_too_large", messageKey: "errors.payloadTooLarge" } });
-    if (status >= 400 && status < 500) return reply.code(status).send({ error: { code: "validation_failed", messageKey: "errors.validation" } });
-    req.log.error(error);
-    return reply.code(500).send({ error: { code: "internal", messageKey: "errors.internal" } });
-  });
+  await registerVaultImportRoutes(app, importer);
 
   app.get("/api/health", async (_req, reply) => {
     const dbOk = pingDatabase(database.sqlite);

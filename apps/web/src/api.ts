@@ -51,6 +51,16 @@ export async function apiJson<T>(path: string, schema: { parse(v: unknown): T },
     headers: init?.body === undefined ? {} : { "content-type": "application/json" },
     body: init?.body === undefined ? null : JSON.stringify(init.body),
   });
+  return parseResponse(res, schema);
+}
+
+/** Raw upload (the zip import is the only non-JSON body the server takes, D-061). */
+export async function apiUpload<T>(path: string, schema: { parse(v: unknown): T }, body: Blob, contentType: string): Promise<T> {
+  const res = await fetch(path, { method: "POST", credentials: "same-origin", headers: { "content-type": contentType }, body });
+  return parseResponse(res, schema);
+}
+
+async function parseResponse<T>(res: Response, schema: { parse(v: unknown): T }): Promise<T> {
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const e = (data as { error?: { code?: string; messageKey?: string; details?: unknown } } | null)?.error;

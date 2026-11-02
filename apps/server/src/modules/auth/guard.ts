@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { HubConfig } from "../../config.ts";
+import { ZIP_IMPORT_PATH } from "../vault-import/routes.ts";
 
 const UNSAFE = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const VITE_DEV_PORT = 5173;
@@ -41,7 +42,9 @@ export function registerGuards(app: FastifyInstance, config: HubConfig): void {
       }
       const length = Number(req.headers["content-length"] ?? "0");
       const type = req.headers["content-type"] ?? "";
-      if ((length > 0 || req.headers["transfer-encoding"]) && !/^application\/json(;|$)/i.test(type)) {
+      // One exception: the zip upload of a vault import (D-061), on exactly that path and method.
+      const zipUpload = req.method === "POST" && req.url.split("?")[0] === ZIP_IMPORT_PATH && /^application\/zip$/i.test(type);
+      if ((length > 0 || req.headers["transfer-encoding"]) && !zipUpload && !/^application\/json(;|$)/i.test(type)) {
         return reject(reply, 415, "unsupported_media_type", "errors.unsupportedMediaType");
       }
     }

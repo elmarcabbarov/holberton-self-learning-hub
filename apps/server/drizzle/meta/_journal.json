@@ -57,6 +57,13 @@
       "when": 1793649894215,
       "tag": "0007_quiz",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793655439551,
+      "tag": "0008_vault_import",
+      "breakpoints": true
     }
   ]
 }

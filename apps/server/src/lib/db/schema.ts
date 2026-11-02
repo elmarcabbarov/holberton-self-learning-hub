@@ -180,3 +180,19 @@ export const quizAnswers = sqliteTable("quiz_answers", {
   correct: integer("correct", { mode: "boolean" }), // null = short answer not graded yet
   gradedAt: text("graded_at"),
 }, (t) => [primaryKey({ columns: [t.attemptId, t.questionId] })]);
+
+/**
+ * Import of Markdown files into the Hub vault (D-061). `entries_json` is the frozen preview;
+ * each entry gains its outcome during commit, so an interrupted commit can be resumed.
+ */
+export const vaultImports = sqliteTable("vault_imports", {
+  id: text("id").primaryKey(),
+  source: text("source").notNull(), // zip | folder
+  sourceName: text("source_name").notNull(),
+  prefix: text("prefix").notNull(),
+  state: text("state").notNull(), // preview | committing | interrupted | done | expired
+  entriesJson: text("entries_json").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  finishedAt: text("finished_at"),
+});

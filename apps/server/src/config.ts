@@ -22,6 +22,8 @@ export interface HubConfig {
   watchVault: boolean;
   /** Polling watcher for bind mounts without inotify (HUB_VAULT_POLL=1). */
   vaultPolling: boolean;
+  /** Folder whose immediate subfolders can be imported into the vault (HUB_IMPORT_DIR, D-061). */
+  importDir: string | null;
 }
 
 function parseMode(raw: string | undefined): HubMode {
@@ -66,6 +68,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HubConfig {
     dev: env.HUB_DEV === "1",
     watchVault: env.HUB_VAULT_WATCH !== "0",
     vaultPolling: env.HUB_VAULT_POLL === "1",
+    importDir: env.HUB_IMPORT_DIR ? resolve(env.HUB_IMPORT_DIR) : null,
     bindHost,
     // Default is the repository root's .data, independent of the working directory.
     dataDir: env.HUB_DATA ? resolve(env.HUB_DATA) : fileURLToPath(new URL("../../../.data", import.meta.url)),
