@@ -173,6 +173,30 @@ test("a streamed answer survives a failed refresh, and a stored answer replaces 
   await expect(conversation.getByRole("button", { name: "Try again" })).toHaveCount(0);
 });
 
+test("retrying a stored failure keeps the new answer even if the refresh fails", async ({ page }) => {
+  await resetAI(page);
+  const current = await (await page.request.get("/api/ai/status")).json();
+  // Nothing listens on the discard port: the server stores this answer as an `unreachable` error.
+  await page.request.put("/api/ai/settings", { headers, data: { mode: "openai_compatible", baseUrl: "http://127.0.0.1:9/v1", model: "m", revision: current.revision, key: { op: "keep" } } });
+  const space = await (await page.request.post("/api/spaces", { headers, data: { name: `Retry stored ${Date.now()}` } })).json();
+  await page.goto(`/spaces/${space.id}/tutor`);
+  await page.getByRole("button", { name: "I already did this — skip" }).click();
+  await page.getByLabel("Your question or reply").fill("Why is my child a zombie?");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const conversation = page.getByRole("region", { name: "Conversation", exact: true });
+  await expect(conversation.getByRole("button", { name: "Try again" })).toBeVisible();
+  await page.reload(); // the failure now comes from the server, not from local state
+  await page.getByRole("button", { name: /General question/ }).click();
+  await expect(conversation.getByRole("button", { name: "Try again" })).toBeVisible();
+
+  await setAI(page, "mock");
+  await page.route(/\/api\/tutor\/threads\/[^/]+$/, (route) => (route.request().method() === "GET" ? route.fulfill({ status: 500, body: "{}" }) : route.continue()));
+  await conversation.getByRole("button", { name: "Try again" }).click();
+  await expect(conversation.getByText(/^mock:/).first()).toBeVisible();
+  await expect(conversation.getByRole("button", { name: "Try again" })).toHaveCount(0);
+  await page.unrouteAll({ behavior: "wait" });
+});
+
 test("exam mode follows the server on focus and expiry; incomplete and remote AI settings are explained", async ({ page }) => {
   await resetAI(page);
   const space = await (await page.request.post("/api/spaces", { headers, data: { name: `Exam tutor ${Date.now()}` } })).json();

@@ -128,7 +128,7 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
   const thread = useQuery({ queryKey: detailKey(id), queryFn: () => apiJson(`/api/tutor/threads/${id}`, TutorThreadDetail), refetchInterval: (q) => q.state.data?.messages.some((m) => m.status === "streaming") ? 2000 : false });
   const [content, setContent] = useState("");
   // Each send owns an immutable payload, including its id and language, through failures and retries.
-  const [active, setActive] = useState<{ payload: SendTutorMessage; text: string; meta?: Start; error?: string } | null>(null);
+  const [active, setActive] = useState<{ payload: SendTutorMessage; text: string; meta?: Start; error?: string; settledAt?: number } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const controller = useRef<AbortController | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
@@ -141,10 +141,17 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
       controller.current = new AbortController();
       setActive({ payload, text: "" }); setAnnouncement("");
       let completed = "";
-      await sendTutorMessage(id, payload, controller.current.signal, (event) => {
-        if (event.event === "delta") { completed += event.data.text; setActive((a) => a && { ...a, text: a.text + event.data.text }); }
-        if (event.event === "start") setActive((a) => a && { ...a, meta: event.data });
-      });
+      try {
+        await sendTutorMessage(id, payload, controller.current.signal, (event) => {
+          if (event.event === "delta") { completed += event.data.text; setActive((a) => a && { ...a, text: a.text + event.data.text }); }
+          if (event.event === "start") setActive((a) => a && { ...a, meta: event.data });
+        });
+      } finally {
+        // Only thread data fetched after this moment may replace the local copy (a cached older failure of the
+        // same request must not).
+        const settledAt = Date.now();
+        setActive((a) => a && { ...a, settledAt });
+      }
       return completed;
     },
     // The streamed answer stays on screen until the server's copy of this request is loaded (see the effect
@@ -165,11 +172,11 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
   // Reconcile by request id: once the server reports a final state for the active request (even one whose
   // stream dropped after the commit), its stored messages replace the local copy.
   useEffect(() => {
-    if (!active || send.isPending) return;
+    if (!active?.settledAt || send.isPending || thread.dataUpdatedAt <= active.settledAt) return;
     const user = thread.data?.messages.find((m) => m.role === "user" && m.requestId === active.payload.requestId);
     const answer = user && thread.data?.messages.find((m) => m.replyTo === user.id);
     if (answer && answer.status !== "streaming") setActive(null);
-  }, [thread.data, active, send.isPending]);
+  }, [thread.data, thread.dataUpdatedAt, active, send.isPending]);
   const archive = useMutation({ mutationFn: () => apiJson(`/api/tutor/threads/${id}`, TutorThread, { method: "PATCH", body: { archived: !thread.data?.archivedAt } }), onSuccess: () => { void qc.invalidateQueries({ queryKey: detailKey(id) }); void qc.invalidateQueries({ queryKey: threadsKey }); } });
   const submit = (kind: SendTutorMessage["kind"]) => {
     if (send.isPending) return;
