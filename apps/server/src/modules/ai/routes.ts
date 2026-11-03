@@ -19,6 +19,7 @@ export async function registerAIRoutes(app: FastifyInstance, ai: AIService): Pro
 
   app.post("/api/ai/probe", async (_req, reply) => {
     const out = await ai.probe();
+    if (out.kind === "exam_mode") return err(reply, 423, "exam_mode", "tutor.examMode");
     if (out.kind === "not_ready") return err(reply, 409, "conflict", "ai.notReadyError");
     if (out.kind === "busy") return err(reply, 429, "rate_limited", "ai.busy");
     return AIStatus.parse(out.status);

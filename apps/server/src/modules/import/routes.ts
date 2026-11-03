@@ -18,6 +18,7 @@ export async function registerImportRoutes(app: FastifyInstance, database: Datab
     const { db } = database;
     const { spaceId, cards } = db.transaction(() => {
       const space = createSpace(db, { name: body.data.spaceName, description: "" });
+      db.update(spaces).set({ tutorMode: "project" }).where(eq(spaces.id, space.id)).run();
       let n = 0;
       for (const t of body.data.topics) {
         const topic = createTopic(db, space.id, { name: t.name });

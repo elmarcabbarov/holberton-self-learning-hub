@@ -8,6 +8,7 @@ import { aiSettings } from "../../lib/db/schema.ts";
 import { isIP } from "node:net";
 import { EndpointError, guardedFetch, parseV6, validateBaseUrl, type Resolve } from "./net.ts";
 import { MockProvider, SdkProvider, type AIProvider } from "./provider.ts";
+import type { ExamService } from "../exam-mode/service.ts";
 import { maskSecret, type SecretStore } from "./secrets.ts";
 
 type Row = typeof aiSettings.$inferSelect;
@@ -33,7 +34,7 @@ export function localityOf(baseUrl: string): "local" | "remote" {
 }
 
 export type SaveOutcome = { kind: "ok"; status: AIStatus } | { kind: "conflict" } | { kind: "invalid"; reason: string };
-export type ProbeOutcome = { kind: "ok"; status: AIStatus } | { kind: "not_ready" } | { kind: "busy" };
+export type ProbeOutcome = { kind: "ok"; status: AIStatus } | { kind: "not_ready" } | { kind: "busy" } | { kind: "exam_mode" };
 
 /**
  * AI provider registry (HSLH-014, D-065). Off by default. Saving settings or reading status never calls a
@@ -45,11 +46,13 @@ export class AIService {
   private readonly fetchImpl: typeof fetch;
   private readonly allowMock: boolean;
   private readonly resolve: Resolve | undefined;
+  private readonly exam: ExamService | undefined;
   private probing = false;
   private saving: Promise<unknown> = Promise.resolve();
   private lastProbe = 0;
 
-  constructor(db: Db, secrets: SecretStore, opts: { fetch?: typeof fetch; allowMock?: boolean; resolve?: Resolve } = {}) {
+  constructor(db: Db, secrets: SecretStore, opts: { fetch?: typeof fetch; allowMock?: boolean; resolve?: Resolve; exam?: ExamService } = {}) {
+    this.exam = opts.exam;
     this.resolve = opts.resolve;
     this.db = db;
     this.secrets = secrets;
@@ -144,13 +147,21 @@ export class AIService {
     return this.providerFor(this.row());
   }
 
+  /** One immutable settings row supplies both the adapter and its provenance (D-066). */
+  async session() {
+    const r = this.row();
+    const provider = await this.providerFor(r);
+    if (!provider) return null;
+    return { provider, providerId: provider.id, model: r.model, revision: r.revision, maxOutputTokens: r.maxOutputTokens,
+      locality: r.mode === "mock" ? "local" as const : r.mode === "anthropic" ? "remote" as const : localityOf(r.baseUrl) };
+  }
+
   /** Builds the provider from one settings snapshot, so a concurrent save cannot mix two configurations. */
   private async providerFor(r: Row): Promise<AIProvider | null> {
-    const st = await this.statusOf(r);
-    if (!st.ready) return null;
+    const key = await this.keyFor(r);
+    if (r.mode === "disabled" || !r.model || (r.mode === "openai_compatible" && !r.baseUrl) || (r.keyBinding !== null && key === null)) return null;
     const fetchImpl = guardedFetch(CALL_TIMEOUT_MS, this.fetchImpl, this.resolve);
     if (r.mode === "mock") return new MockProvider([{ answer: 4 }]);
-    const key = await this.keyFor(r);
     if (r.mode === "anthropic") {
       if (!key) return null;
       return new SdkProvider("anthropic", createAnthropic({ apiKey: key, baseURL: ANTHROPIC_URL, fetch: fetchImpl })(r.model));
@@ -165,28 +176,38 @@ export class AIService {
    * the result for the settings revision it tested. One at a time, at most one every few seconds.
    */
   async probe(): Promise<ProbeOutcome> {
+    if (this.exam?.active()) return { kind: "exam_mode" };
     if (this.probing || Date.now() - this.lastProbe < PROBE_GAP_MS) return { kind: "busy" };
     this.probing = true; // taken before the first await: two requests cannot both pass the check
+    const controller = new AbortController();
+    const untrack = this.exam?.track(controller);
     try {
       const snapshot = this.row();
       const provider = await this.providerFor(snapshot);
+      if (controller.signal.aborted) return { kind: "exam_mode" };
       if (!provider) return { kind: "not_ready" };
-      const results = await this.runProbes(provider, Math.min(snapshot.maxOutputTokens, 256));
+      const results = await this.runProbes(provider, Math.min(snapshot.maxOutputTokens, 256), controller.signal);
+      if (controller.signal.aborted) return { kind: "exam_mode" };
       this.lastProbe = Date.now();
       // Stored under the tested revision; status() shows it only while that revision is current.
       this.db.update(aiSettings).set({ probesJson: JSON.stringify(results), probedRevision: snapshot.revision, probedAt: new Date().toISOString() })
         .where(eq(aiSettings.id, 1)).run();
       return { kind: "ok", status: await this.status() };
+    } catch (e) {
+      if (controller.signal.aborted) return { kind: "exam_mode" };
+      throw e;
     } finally {
+      untrack?.();
       this.probing = false;
     }
   }
 
-  private async runProbes(provider: AIProvider, max: number): Promise<ProbeResult[]> {
+  private async runProbes(provider: AIProvider, max: number, parent: AbortSignal): Promise<ProbeResult[]> {
     const results: ProbeResult[] = [];
     const timed = async (capability: ProbeResult["capability"], run: (signal: AbortSignal) => Promise<ProbeResult["error"]>) => {
       const t0 = Date.now();
-      const signal = AbortSignal.timeout(CALL_TIMEOUT_MS);
+      parent.throwIfAborted();
+      const signal = AbortSignal.any([parent, AbortSignal.timeout(CALL_TIMEOUT_MS)]);
       const error = await run(signal).catch(() => "unknown" as const);
       results.push({ capability, ok: error === null, error, ms: Date.now() - t0 });
     };

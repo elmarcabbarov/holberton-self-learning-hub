@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /** Instance-level key/value facts (instance id, creation time, schema notes). */
@@ -24,6 +25,7 @@ export const sessions = sqliteTable("sessions", {
 });
 
 export const spaces = sqliteTable("spaces", {
+  tutorMode: text("tutor_mode", { enum: ["project", "explain"] }),
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
@@ -261,3 +263,49 @@ export const aiSettings = sqliteTable("ai_settings", {
   probedRevision: integer("probed_revision"),
   probedAt: text("probed_at"),
 });
+
+/** Voluntary app-wide AI pause, independent of provider settings (D-066). */
+export const examMode = sqliteTable("exam_mode", {
+  id: integer("id").primaryKey(), // always 1
+  until: text("exam_until"),
+});
+
+export const tutorThreads = sqliteTable("tutor_threads", {
+  id: text("id").primaryKey(),
+  spaceId: text("space_id").notNull().references(() => spaces.id, { onDelete: "restrict" }),
+  topicId: text("topic_id").references(() => topics.id, { onDelete: "restrict" }),
+  frameworkJson: text("framework_json").notNull(),
+  hintLevel: integer("hint_level").notNull().default(0),
+  approachStep: integer("approach_step").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  archivedAt: text("archived_at"),
+}, (t) => [index("tutor_threads_space_topic_idx").on(t.spaceId, t.topicId)]);
+
+export const tutorMessages = sqliteTable("tutor_messages", {
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  id: text("id").notNull().unique(),
+  threadId: text("thread_id").notNull().references(() => tutorThreads.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  requestId: text("request_id"), // only user rows; assistant links through reply_to
+  replyTo: text("reply_to").unique(),
+  payloadJson: text("payload_json"), // canonical validated request, for idempotency
+  kind: text("kind", { enum: ["chat", "hint", "explain", "approach"] }).notNull(),
+  lang: text("lang", { enum: ["en", "az"] }).notNull(),
+  content: text("content").notNull().default(""),
+  status: text("status", { enum: ["streaming", "complete", "error", "interrupted", "cancelled"] }).notNull(),
+  errorCode: text("error_code"),
+  mode: text("mode", { enum: ["project", "explain"] }),
+  hintLevel: integer("hint_level"),
+  approachStep: integer("approach_step"),
+  providerId: text("provider_id"),
+  model: text("model"),
+  revision: integer("revision"),
+  promptVersion: text("prompt_version"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [
+  uniqueIndex("tutor_messages_request_unique").on(t.threadId, t.requestId).where(sql`${t.role} = 'user'`),
+  uniqueIndex("tutor_messages_streaming_unique").on(t.threadId).where(sql`${t.role} = 'assistant' AND ${t.status} = 'streaming'`),
+  index("tutor_messages_thread_seq_idx").on(t.threadId, t.seq),
+]);

@@ -1,0 +1,1 @@
+Hint L4: explain the concept with independent example code, never the project task itself. Then ask the learner to write it themselves without looking at the example. Suggest asking a peer if still stuck.

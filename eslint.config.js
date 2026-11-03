@@ -23,6 +23,7 @@ export default tseslint.config(
       "boundaries/elements": [
         { type: "contracts", pattern: "packages/contracts", partialMatch: false },
         { type: "server-ai", pattern: "apps/server/src/modules/ai", partialMatch: false },
+        { type: "server-tutor", pattern: "apps/server/src/modules/tutor", partialMatch: false },
         // Composition root: the only server code that may wire optional modules in (ADR-007).
         { type: "server-root", pattern: "apps/server/src/compose", partialMatch: false },
         { type: "server-research", pattern: "apps/server/src/modules/research", partialMatch: false },
@@ -41,8 +42,9 @@ export default tseslint.config(
           allow("contracts", ["contracts"]),
           allow("web", ["web", "contracts"]),
           allow("server", ["server", "server-root", "contracts"]),
-          allow("server-root", ["server", "server-ai", "contracts"]),
-          allow("server-test", ["server-test", "server", "server-root", "server-ai", "server-research", "contracts"]),
+          allow("server-root", ["server", "server-ai", "server-tutor", "contracts"]),
+          allow("server-test", ["server-test", "server", "server-root", "server-ai", "server-research", "server-tutor", "contracts"]),
+          allow("server-tutor", ["server-tutor", "server", "contracts"]),
           allow("server-ai", ["server-ai", "server", "contracts"]),
           allow("server-research", ["server-research", "server-ai", "server", "contracts"]),
           allow("e2e", ["e2e", "contracts"])
@@ -53,9 +55,9 @@ export default tseslint.config(
   {
     // Core server code must not reach into optional AI/research modules.
     files: ["apps/server/src/**/*.ts"],
-    ignores: ["apps/server/src/modules/ai/**", "apps/server/src/modules/research/**", "apps/server/src/compose/**", "apps/server/src/app.ts"],
+    ignores: ["apps/server/src/modules/ai/**", "apps/server/src/modules/research/**", "apps/server/src/modules/tutor/**", "apps/server/src/compose/**", "apps/server/src/app.ts"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: [{ group: ["**/modules/ai/**", "**/modules/research/**", "**/compose/**"], message: "Core must not depend on AI/research or the composition root (ADR-007)." }] }]
+      "no-restricted-imports": ["error", { patterns: [{ group: ["**/modules/ai/**", "**/modules/research/**", "**/modules/tutor/**", "**/compose/**"], message: "Core must not depend on AI/research/tutor or the composition root (ADR-007)." }] }]
     }
   },
   {

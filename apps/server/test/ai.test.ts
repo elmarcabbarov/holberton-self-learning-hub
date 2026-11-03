@@ -274,3 +274,48 @@ describe("endpoint policy", () => {
     expect(localityOf("http://192.168.1.20:1234/v1")).toBe("local");
   });
 });
+
+describe("AI session snapshots and app exam mode", () => {
+  it("returns null when disabled and pairs provider with one model/revision/token/locality snapshot", async () => {
+    const { AIService } = await import("../src/modules/ai/service.ts");
+    const { SecretStore } = await import("../src/modules/ai/secrets.ts");
+    const seen: Seen[] = [];
+    t = await signedInApp({}, { aiFetch: fakeOpenAI(seen) });
+    const ai = new AIService(t.app.database.db, new SecretStore(t.dir, undefined), { fetch: fakeOpenAI(seen) });
+    expect(await ai.session()).toBeNull();
+    await save({ mode: "openai_compatible", baseUrl: OLLAMA, model: "old-model", maxOutputTokens: 128, revision: 0 });
+    const pending = ai.session();
+    // session() has read its row, but provider construction has yielded to its async key read.
+    t.app.database.sqlite.prepare("UPDATE ai_settings SET model = 'new-model', revision = 2, max_output_tokens = 256").run();
+    const session = (await pending)!;
+    expect(session).toMatchObject({ providerId: "openai_compatible", model: "old-model", revision: 1, maxOutputTokens: 128, locality: "local" });
+    for await (const ev of session.provider.generateText({ prompt: "hello", maxOutputTokens: session.maxOutputTokens }, new AbortController().signal)) void ev;
+    expect(seen[0]!.body.model).toBe("old-model");
+    expect(seen[0]!.body.max_tokens).toBe(128);
+    expect(await ai.session()).toMatchObject({ model: "new-model", revision: 2, maxOutputTokens: 256 });
+  });
+
+  it("aborts a running probe when exam mode activates, without starting further capabilities", async () => {
+    let signal: AbortSignal | undefined;
+    let called!: () => void;
+    const entered = new Promise<void>((r) => { called = r; });
+    const blockingFetch = (async (_input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      signal = init!.signal!;
+      called();
+      return new Promise<Response>((_, reject) => {
+        signal!.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+      });
+    }) as typeof fetch;
+    t = await signedInApp({}, { aiFetch: blockingFetch });
+    await save({ mode: "openai_compatible", baseUrl: OLLAMA, model: "m", revision: 0 });
+    const pending = t.req({ method: "POST", url: "/api/ai/probe", payload: {} });
+    await entered;
+    await t.req({ method: "PUT", url: "/api/exam-mode", payload: { until: new Date(Date.now() + 60_000).toISOString() } });
+    expect(signal?.aborted).toBe(true);
+    expect((await pending).statusCode).toBe(423);
+    expect((await status()).probes).toBeNull();
+    expect((await t.req({ method: "PUT", url: "/api/exam-mode", payload: { until: "invalid" } })).statusCode).toBe(400);
+    await t.req({ method: "PUT", url: "/api/exam-mode", payload: { until: new Date(Date.now() - 1000).toISOString() } });
+    expect((await t.req({ method: "GET", url: "/api/exam-mode" })).json()).toEqual({ until: null });
+  });
+});
