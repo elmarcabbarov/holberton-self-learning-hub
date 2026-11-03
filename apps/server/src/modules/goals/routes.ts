@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { CreateGoal, CreateTask, Goal, GoalList, IdParam, ReorderTasks, SetNoteTopics, SpaceNoteList, TopicRefList, UpdateGoal, UpdateTask } from "@hub/contracts";
+import { CreateGoal, CreatedSpaceNote, CreateSpaceNote, CreateTask, Goal, GoalList, IdParam, ReorderTasks, SetNoteSpaces, SetNoteTopics, SpaceNoteList, SpaceRefList, TopicRefList, UpdateGoal, UpdateTask } from "@hub/contracts";
 import { z } from "zod";
 import type { DatabaseHandle } from "../../lib/db/index.ts";
 import * as svc from "./service.ts";
+import type { Vault } from "../vault/service.ts";
+import { createSpaceNote } from "./space-notes.ts";
 
 const err = (reply: FastifyReply, status: number, code: string, messageKey: string) => reply.code(status).send({ error: { code, messageKey } });
 const notFound = (reply: FastifyReply) => err(reply, 404, "not_found", "errors.notFound");
@@ -18,7 +20,7 @@ function send(reply: FastifyReply, out: Outcome) {
 }
 
 /** Goals with checklist tasks, and note ↔ topic links (HSLH-007, D-063). */
-export async function registerGoalRoutes(app: FastifyInstance, database: DatabaseHandle): Promise<void> {
+export async function registerGoalRoutes(app: FastifyInstance, database: DatabaseHandle, vault: Vault): Promise<void> {
   const { db } = database;
 
   app.get("/api/spaces/:id/goals", async (req, reply) => {
@@ -104,5 +106,37 @@ export async function registerGoalRoutes(app: FastifyInstance, database: Databas
     const p = IdParam.safeParse(req.params);
     if (!p.success || !svc.spaceExists(db, p.data.id)) return notFound(reply);
     return SpaceNoteList.parse({ notes: svc.spaceNotes(db, p.data.id) });
+  });
+
+  // HSLH-028: a space holds many notes. Direct links are database only; the file never changes (D-002).
+  app.get("/api/notes/:id/spaces", async (req, reply) => {
+    const p = IdParam.safeParse(req.params);
+    if (!p.success || !svc.noteExists(db, p.data.id)) return notFound(reply);
+    return SpaceRefList.parse({ spaces: svc.noteSpaceRefs(db, p.data.id) });
+  });
+
+  app.put("/api/notes/:id/spaces", async (req, reply) => {
+    const p = IdParam.safeParse(req.params);
+    if (!p.success) return notFound(reply);
+    const body = SetNoteSpaces.safeParse(req.body);
+    if (!body.success) return err(reply, 400, "validation_failed", "errors.validation");
+    const out = svc.setNoteSpaces(db, p.data.id, body.data.spaceIds);
+    if (out.kind === "not_found") return notFound(reply);
+    if (out.kind === "bad_space") return err(reply, 400, "validation_failed", "noteSpaces.badSpace");
+    return SpaceRefList.parse({ spaces: svc.noteSpaceRefs(db, p.data.id) });
+  });
+
+  app.post("/api/spaces/:id/notes", async (req, reply) => {
+    const p = IdParam.safeParse(req.params);
+    if (!p.success) return notFound(reply);
+    const body = CreateSpaceNote.safeParse(req.body);
+    if (!body.success) return err(reply, 400, "validation_failed", "errors.validation");
+    const out = await createSpaceNote(db, vault, p.data.id, body.data);
+    if (out.kind === "not_found") return notFound(reply);
+    if (out.kind === "archived") return err(reply, 409, "conflict", "noteSpaces.archived");
+    if (out.kind === "bad_topic") return err(reply, 400, "validation_failed", "goals.badTopic");
+    if (out.kind === "invalid") return err(reply, 400, "validation_failed", "noteSpaces.badTitle");
+    if (out.kind === "taken") return err(reply, 409, "conflict", "noteSpaces.taken");
+    return reply.code(201).send(CreatedSpaceNote.parse({ noteId: out.noteId, path: out.path }));
   });
 }

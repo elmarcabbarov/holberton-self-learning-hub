@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Goal, GoalList, SpaceNoteList, TopicRefList } from "@hub/contracts";
+import { CreatedSpaceNote, Goal, GoalList, SpaceNoteList, SpaceRefList, TopicRefList } from "@hub/contracts";
 import type { GoalList as GoalListType } from "@hub/contracts";
 import { apiJson } from "../api.ts";
 
@@ -69,6 +69,27 @@ export function useSetNoteTopics(noteId: string) {
     mutationFn: (topicIds: string[]) => apiJson(`/api/notes/${noteId}/topics`, TopicRefList, { method: "PUT", body: { topicIds } }),
     scope: { id: `note-topics:${noteId}` },
     onSuccess: (data) => { qc.setQueryData(["notes", noteId, "topics"], data); void qc.invalidateQueries({ queryKey: ["space-notes"] }); },
+  });
+}
+// HSLH-028: direct note ↔ space links and notes created from a space.
+export const useNoteSpaces = (noteId: string) => useQuery({ queryKey: ["notes", noteId, "spaces"], queryFn: () => apiJson(`/api/notes/${noteId}/spaces`, SpaceRefList) });
+export function useSetNoteSpaces(noteId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (spaceIds: string[]) => apiJson(`/api/notes/${noteId}/spaces`, SpaceRefList, { method: "PUT", body: { spaceIds } }),
+    scope: { id: `note-spaces:${noteId}` },
+    onSuccess: (data) => { qc.setQueryData(["notes", noteId, "spaces"], data); void qc.invalidateQueries({ queryKey: ["space-notes"] }); },
+  });
+}
+export function useCreateSpaceNote(spaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { title: string; topicId?: string }) => apiJson(`/api/spaces/${spaceId}/notes`, CreatedSpaceNote, { method: "POST", body: input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["space-notes", spaceId] });
+      void qc.invalidateQueries({ queryKey: ["notes"], exact: true });
+      void qc.invalidateQueries({ queryKey: ["spaces"] }); // the space's note folder is set on first use
+    },
   });
 }
 export const useSpaceNotes = (spaceId: string) => useQuery({ queryKey: ["space-notes", spaceId], queryFn: () => apiJson(`/api/spaces/${spaceId}/notes`, SpaceNoteList) });

@@ -12,3 +12,4 @@ export * from "./goals.ts";
 export * from "./sessions.ts";
 export * from "./ai.ts";
 export * from "./tutor.ts";
+export * from "./files.ts";
