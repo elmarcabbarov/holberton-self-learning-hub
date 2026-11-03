@@ -46,10 +46,13 @@ export async function registerDraftRoutes(app: FastifyInstance, database: Databa
     if (v.state !== "ready") throw new svc.DraftError("vault_unavailable", 503, "notes.vaultUnavailable");
     return note;
   };
-  const get = async (id: string) => {
+  /** Whether the note differs from the frozen source. Every response that carries a draft or item reports it. */
+  const sourceChanged = async (id: string) => {
     const draft = svc.row(db, id);
-    let changed = true;
-    try { changed = (await readNote(draft.noteId)).version.sha256 !== draft.noteSha256; } catch { /* Missing/unavailable source is also no longer the frozen source. */ }
+    try { return (await readNote(draft.noteId)).version.sha256 !== draft.noteSha256; } catch { return true; /* Missing/unavailable source is also no longer the frozen source. */ }
+  };
+  const get = async (id: string) => {
+    const changed = await sourceChanged(id);
     svc.refreshWarnings(db, id);
     return svc.detail(db, id, changed);
   };
@@ -66,7 +69,7 @@ export async function registerDraftRoutes(app: FastifyInstance, database: Databa
       controllers.delete(controller);
       reply.raw.off("close", disconnect);
     }
-    return svc.detail(db, draft.id);
+    return get(draft.id);
   };
 
   app.post("/api/drafts", async (req, reply) => respond(reply, async () => {
@@ -74,7 +77,7 @@ export async function registerDraftRoutes(app: FastifyInstance, database: Databa
     if (!b.success) throw invalid();
     assertAvailable();
     const old = svc.previous(db, b.data);
-    if (old) return svc.detail(db, old.id);
+    if (old) return get(old.id);
     const session = await ai.session();
     assertAvailable();
     if (!session) throw new svc.DraftError("not_ready", 409, "ai.notReadyError");
@@ -83,7 +86,7 @@ export async function registerDraftRoutes(app: FastifyInstance, database: Databa
     if (note.text.length > MAX_DRAFT_NOTE_CHARS) throw new svc.DraftError("note_too_large", 413, "drafts.noteTooLarge");
     assertAvailable();
     const claim = svc.begin(db, b.data, note, session);
-    if (claim.replay) return svc.detail(db, claim.draft.id);
+    if (claim.replay) return get(claim.draft.id);
     return run(reply, session, claim.draft);
   }));
   app.get("/api/drafts/:id", async (req, reply) => respond(reply, () => get(idOf(req.params))));
@@ -92,12 +95,14 @@ export async function registerDraftRoutes(app: FastifyInstance, database: Databa
     if (!q.success) throw invalid();
     return DraftList.parse({ drafts: await Promise.all(svc.list(db, q.data.noteId).map((d) => get(d.id))) });
   }));
-  app.patch("/api/drafts/:id/items/:itemId", async (req, reply) => respond(reply, () => {
+  app.patch("/api/drafts/:id/items/:itemId", async (req, reply) => respond(reply, async () => {
     const p = DraftItemParams.safeParse(req.params);
     if (!p.success) throw svc.notFound();
     const b = UpdateDraftItem.safeParse(req.body);
     if (!b.success) throw invalid();
-    return DraftItem.parse(svc.edit(db, p.data.id, p.data.itemId, b.data));
+    const item = svc.edit(db, p.data.id, p.data.itemId, b.data);
+    const changed = await sourceChanged(p.data.id);
+    return DraftItem.parse(changed && !item.warnings.includes("source_changed") ? { ...item, warnings: [...item.warnings, "source_changed"] } : item);
   }));
   app.post("/api/drafts/:id/commit", async (req, reply) => respond(reply, () => {
     const id = idOf(req.params);

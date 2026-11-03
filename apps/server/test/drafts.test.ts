@@ -137,6 +137,18 @@ describe("note drafts", () => {
     expect(current.items[0]!.warnings).not.toContain("excerpt_not_found"); // excerpt is checked against the frozen source
   });
 
+  it("keeps the source-change warning in replay and edit responses (Codex review)", async () => {
+    const { input } = await setup();
+    const draft = await generated(input);
+    writeFileSync(join(t!.dir, "vault", "wait.md"), "waitpid() waits for a child");
+    const replay = Draft.parse((await generate(input)).json());
+    expect(replay.id).toBe(draft.id);
+    expect(replay.warnings).toEqual(["source_changed"]);
+    const edited = await edit(draft, 0, { version: 1, payload: { ...card, back: "Reaps a finished child." } });
+    expect(edited.statusCode).toBe(200);
+    expect(edited.json().warnings).toContain("source_changed");
+  });
+
   it("rolls back cards, item transitions and commit identity on a forced second-card failure", async () => {
     const { input } = await setup();
     const draft = await generated(input);
