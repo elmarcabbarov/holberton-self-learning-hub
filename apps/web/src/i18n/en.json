@@ -649,5 +649,11 @@
     "chosen": "Until a chosen time",
     "start": "Start exam mode",
     "banner": "Exam mode until {time} — AI is off"
+  },
+  "drafts": {
+    "conflict": "This draft changed or cannot be used for this action. Reload and try again.",
+    "consentRequired": "Confirm sending this note using the current AI settings.",
+    "noteTooLarge": "This note is too large to generate drafts (maximum 24,000 characters).",
+    "shuttingDown": "The server is shutting down. Try again after restarting."
   }
 }

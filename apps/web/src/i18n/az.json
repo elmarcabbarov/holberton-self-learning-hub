@@ -649,5 +649,11 @@
     "chosen": "Seçilmiş vaxtadək",
     "start": "İmtahan rejimini başlat",
     "banner": "İmtahan rejimi {time} vaxtınadək — süni intellekt söndürülüb"
+  },
+  "drafts": {
+    "conflict": "Bu qaralama dəyişib və ya bu əməliyyat üçün istifadə edilə bilməz. Yeniləyib yenidən cəhd edin.",
+    "consentRequired": "Bu qeydin cari AI ayarları ilə göndərilməsinə razılıq verin.",
+    "noteTooLarge": "Bu qeyd qaralama yaratmaq üçün çox böyükdür (ən çox 24 000 simvol).",
+    "shuttingDown": "Server bağlanır. Yenidən başladıqdan sonra cəhd edin."
   }
 }
