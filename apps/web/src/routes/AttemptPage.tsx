@@ -7,7 +7,7 @@ import { useAnswer, useAttempt, useGrade, useSubmitAttempt } from "../features/q
 import { Button, Card, PageTitle } from "../components/ui.tsx";
 import { ScoreLine } from "../components/ScoreLine.tsx";
 
-const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg";
+const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg";
 const same = (a: Response | null | undefined, b: Response | null | undefined) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const isEmpty = (r: Response | undefined) => !r || ("selected" in r ? r.selected.length === 0 : r.text.trim() === "");
 
@@ -66,7 +66,7 @@ function ItemCard({ attempt, item, n, draft, setDraft }: {
                 const chosen = selected.includes(i);
                 const isKey = key.includes(i);
                 return (
-                  <label key={i} className={`flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 ${fb && isKey ? "border-fg" : "border-line"} bg-surface-2`}>
+                  <label key={i} className={`flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 ${fb && isKey ? "border-fg" : "border-line"} bg-surface`}>
                     <input type={item.type === "mcq" ? "radio" : "checkbox"} name={`q-${item.id}`} checked={chosen} onChange={() => pick(i)} className="mt-1 accent-fg" />
                     <span className="flex-1">{o}</span>
                     {fb && isKey ? <span className="text-[12px] font-medium">{t("quizzes.keyMark")}</span> : null}
@@ -120,7 +120,7 @@ function Result({ attempt }: { attempt: Attempt }) {
   if (!attempt.score) return null;
   return (
     <Card className="mt-8">
-      <h2 className="text-[20px] font-medium">{t("quizzes.resultTitle")}</h2>
+      <h2 className="hub-display text-[22px]">{t("quizzes.resultTitle")}</h2>
       <p className="mt-2 text-[17px]"><ScoreLine score={attempt.score} /></p>
       <p className="mt-2 text-muted">
         {attempt.confidencePre
@@ -128,7 +128,7 @@ function Result({ attempt }: { attempt: Attempt }) {
           : t("quizzes.calibrationSkipped")}
       </p>
       <p className="mt-2 text-[13px] text-muted">{t("quizzes.signalNote")}</p>
-      <Link to="/quizzes/$quizId" params={{ quizId: attempt.quizId }} className="mt-5 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("quizzes.backToQuiz")}</Link>
+      <Link to="/quizzes/$quizId" params={{ quizId: attempt.quizId }} className="mt-5 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg">{t("quizzes.backToQuiz")}</Link>
     </Card>
   );
 }

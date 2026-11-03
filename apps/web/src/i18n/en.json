@@ -73,7 +73,8 @@
     "create": "Create space",
     "empty": "No spaces yet. Create your first one above.",
     "topicCount": "{count, plural, one {# topic} other {# topics}}",
-    "archive": "Archive space"
+    "archive": "Archive space",
+    "sectionsNav": "Sections in this space"
   },
   "topics": {
     "title": "Topics",

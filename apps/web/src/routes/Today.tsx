@@ -8,8 +8,8 @@ import { useSpaces } from "../features/spaces.ts";
 import { Card, PageTitle } from "../components/ui.tsx";
 import { SessionCard } from "../components/SessionCard.tsx";
 
-const primaryLink = "inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-dark";
-const secondaryLink = "inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface";
+const primaryLink = "inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-dark";
+const secondaryLink = "inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg";
 
 /** Today: what to do now, from real data only (no invented numbers, no "mastery" scores). */
 export function Today() {
@@ -32,7 +32,7 @@ export function Today() {
 
       {nothingYet ? (
         <Card className="mt-8">
-          <h2 className="text-[20px] font-medium">{t("today.emptyTitle")}</h2>
+          <h2 className="hub-display text-[22px]">{t("today.emptyTitle")}</h2>
           <p className="mt-2 max-w-prose text-muted">{t("today.emptyBody")}</p>
           <Link to="/spaces" className={`mt-6 ${primaryLink}`}>{t("today.emptyCta")}</Link>
         </Card>
@@ -40,11 +40,11 @@ export function Today() {
 
       {!loading && !failed && !nothingYet ? (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-          <Card>
-            <h2 className="text-[14px] font-medium text-muted">{t("today.reviewHeading")}</h2>
+          <Card className="hub-feature">
+            <h2 className="hub-feature-label text-[14px] font-medium text-muted">{t("today.reviewHeading")}</h2>
             {(summary.data?.due ?? 0) > 0 ? (
               <>
-                <p className="mt-2 text-[32px] font-medium tracking-tight" data-testid="due-count">{t("today.due", { count: summary.data!.due })}</p>
+                <p className="hub-display mt-2 text-[40px] leading-tight" data-testid="due-count">{t("today.due", { count: summary.data!.due })}</p>
                 <Link to="/review" className={`mt-5 ${primaryLink}`}>{t("today.startReview")}</Link>
               </>
             ) : (

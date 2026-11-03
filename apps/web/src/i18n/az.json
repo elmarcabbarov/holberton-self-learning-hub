@@ -73,7 +73,8 @@
     "create": "Sahə yarat",
     "empty": "Hələ sahə yoxdur. İlkini yuxarıda yarat.",
     "topicCount": "{count, plural, one {# mövzu} other {# mövzu}}",
-    "archive": "Sahəni arxivlə"
+    "archive": "Sahəni arxivlə",
+    "sectionsNav": "Bu sahədəki bölmələr"
   },
   "topics": {
     "title": "Mövzular",

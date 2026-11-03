@@ -48,7 +48,7 @@ export function Notes() {
           <span className="sr-only">{t("notesPage.search")}</span>
           <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("notesPage.searchPlaceholder")}
-            className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 pl-9 pr-3 text-fg placeholder:text-muted" />
+            className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface pl-9 pr-3 text-fg placeholder:text-muted" />
         </label>
 
         {q.trim() ? (
