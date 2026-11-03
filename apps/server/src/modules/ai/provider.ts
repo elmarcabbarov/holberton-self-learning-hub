@@ -1,5 +1,5 @@
 import { APICallError, generateObject, generateText, NoObjectGeneratedError, streamText, tool, type LanguageModel } from "ai";
-import type { z } from "zod";
+import { z } from "zod";
 import { EndpointError } from "./net.ts";
 
 /** Our thin AI interface (ARCHITECTURE §3.2). Domain code sees only this; SDK objects never leave this module. */
@@ -33,7 +33,7 @@ const FINAL: AIErrorCode[] = ["auth", "cancelled", "refused", "unreachable", "ti
 export function mapError(e: unknown, signal?: AbortSignal): AIErrorCode {
   if (signal?.aborted) return signal.reason instanceof DOMException && signal.reason.name === "TimeoutError" ? "timeout" : "cancelled";
   if (e instanceof EndpointError) return "unreachable";
-  if (e instanceof NoObjectGeneratedError) return "schema_invalid";
+  if (e instanceof NoObjectGeneratedError) return e.finishReason === "content-filter" ? "refused" : "schema_invalid";
   if (APICallError.isInstance(e)) {
     const s = e.statusCode ?? 0;
     if (s === 401 || s === 403) return "auth";
@@ -52,6 +52,11 @@ export function mapError(e: unknown, signal?: AbortSignal): AIErrorCode {
 const sys = (req: { system?: string }) => (req.system ? { system: req.system } : {});
 const usageOf = (u: { inputTokens?: number | undefined; outputTokens?: number | undefined } | undefined): Usage =>
   ({ inputTokens: u?.inputTokens ?? null, outputTokens: u?.outputTokens ?? null }); // missing = unknown, never 0
+
+/** The JSON Schema as text for prompts; null when the schema cannot be represented (the model then gets none). */
+function schemaText(schema: z.ZodType): string | null {
+  try { return JSON.stringify(z.toJSONSchema(schema, { unrepresentable: "any" })).slice(0, 4000); } catch { return null; }
+}
 
 /** Pulls the first JSON object out of a model's text answer. */
 function extractJson(text: string): unknown {
@@ -107,13 +112,16 @@ export class SdkProvider implements AIProvider {
     // 2. JSON in plain text, 3. one repair turn with the validation errors.
     let previous: string | null = null;
     let issues: string | null = null;
+    const shape = schemaText(req.schema);
+    const schemaLine = shape ? `\nIt must match this JSON Schema: ${shape}` : "";
     while (attempts < max) {
       attempts++;
       const prompt: string = previous === null
-        ? `${req.prompt}\n\nAnswer with one JSON object only, no other text.`
-        : `${req.prompt}\n\nYour previous answer was not valid:\n${previous.slice(0, 2000)}\nProblems: ${issues}\nAnswer again with one corrected JSON object only.`;
+        ? `${req.prompt}\n\nAnswer with one JSON object only, no other text.${schemaLine}`
+        : `${req.prompt}\n\nYour previous answer was not valid:\n${previous.slice(0, 2000)}\nProblems: ${issues}\nAnswer again with one corrected JSON object only.${schemaLine}`;
       try {
-        const r: { text: string } = await generateText({ model: this.model, ...sys(req), prompt, maxOutputTokens: req.maxOutputTokens, maxRetries: 0, abortSignal: signal });
+        const r = await generateText({ model: this.model, ...sys(req), prompt, maxOutputTokens: req.maxOutputTokens, maxRetries: 0, abortSignal: signal });
+        if (r.finishReason === "content-filter") return { ok: false, error: "refused", attempts };
         previous = r.text;
         let parsed: unknown;
         try { parsed = extractJson(r.text); } catch { issues = "not JSON"; last = "schema_invalid"; continue; }

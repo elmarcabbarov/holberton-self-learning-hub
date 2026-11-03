@@ -18,6 +18,11 @@ export function AIPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const status = useQuery({ queryKey: KEY, queryFn: () => apiJson("/api/ai/status", AIStatus) });
+  // A late answer (a slow probe, an old refetch) must never roll the form back to an older revision.
+  const accept = async (next: AIStatus) => {
+    await qc.cancelQueries({ queryKey: KEY });
+    qc.setQueryData<AIStatus>(KEY, (cur) => (cur && cur.revision > next.revision ? cur : next));
+  };
   const [mode, setMode] = useState<AIMode>("disabled");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
@@ -40,12 +45,12 @@ export function AIPanel() {
       method: "PUT",
       body: { mode, baseUrl, model, maxOutputTokens: status.data?.maxOutputTokens ?? 1024, revision: status.data?.revision ?? 0, key: key ? { op: "replace", value: key } : clearKey ? { op: "clear" } : { op: "keep" } },
     }),
-    onSuccess: (s) => qc.setQueryData(KEY, s),
+    onSuccess: accept,
     onError: (e) => { if (e instanceof ApiError && e.status === 409) void qc.invalidateQueries({ queryKey: KEY }); },
   });
   const probe = useMutation({
     mutationFn: () => apiJson("/api/ai/probe", AIStatus, { method: "POST" }),
-    onSuccess: (s) => qc.setQueryData(KEY, s),
+    onSuccess: accept,
   });
 
   if (!status.data) return null;

@@ -6,7 +6,8 @@ import yauzl from "yauzl";
 import { z } from "zod";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { signedInApp, type TestApp } from "./helpers.ts";
-import { addressBlocked, validateBaseUrl } from "../src/modules/ai/net.ts";
+import { addressBlocked, guardedFetch, validateBaseUrl } from "../src/modules/ai/net.ts";
+import { localityOf } from "../src/modules/ai/service.ts";
 import { SdkProvider } from "../src/modules/ai/provider.ts";
 
 const KEY = "sk-test-CANARY-0123456789abcd";
@@ -22,11 +23,13 @@ const chat = (message: Record<string, unknown>) => Response.json({
 });
 
 /** A fake OpenAI-compatible server: answers by what the request asks for. Records every request. */
-function fakeOpenAI(seen: Seen[], opts: { status?: number; json?: string[] } = {}): typeof fetch {
+function fakeOpenAI(seen: Seen[], opts: { status?: number; json?: string[]; finish?: string; gate?: Promise<void> } = {}): typeof fetch {
   const jsonAnswers = [...(opts.json ?? ['{"answer":4}'])];
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
     seen.push({ url: String(input), headers: Object.fromEntries(new Headers(init?.headers).entries()), body, redirect: init?.redirect });
+    if (opts.gate) await opts.gate;
+    if (opts.finish) return Response.json({ id: "c1", object: "chat.completion", created: 1, model: "m", choices: [{ index: 0, message: { role: "assistant", content: "" }, finish_reason: opts.finish }] });
     if (opts.status) return new Response(`{"error":{"message":"bad key ${KEY} for prompt ${JSON.stringify(body).slice(0, 80)}"}}`, { status: opts.status });
     if (body.stream) return sse([{ id: "c1", object: "chat.completion.chunk", created: 1, model: "m", choices: [{ index: 0, delta: { role: "assistant", content: "ready" }, finish_reason: null }] }, { id: "c1", object: "chat.completion.chunk", created: 1, model: "m", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] }]);
     if (body.tools) return chat({ content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "lookup_topic", arguments: '{"name":"pipes"}' } }] });
@@ -54,6 +57,7 @@ describe("AI provider registry", () => {
     expect(probed.probes!.map((p) => [p.capability, p.ok])).toEqual([["text", true], ["structured", true], ["tools", true]]);
     expect(seen.every((s) => s.url.startsWith(`${OLLAMA}/chat/completions`) && s.redirect === "error")).toBe(true);
     expect(seen.some((s) => "authorization" in s.headers)).toBe(false); // no key, no header
+    expect(seen.find((s) => !s.body.stream && !s.body.tools)!.body.response_format).toMatchObject({ type: "json_schema" }); // probe tests native schema
     expect((await t.req({ method: "POST", url: "/api/ai/probe", payload: {} })).statusCode).toBe(429); // throttled
 
     // Results belong to one settings revision.
@@ -149,9 +153,51 @@ describe("AI provider registry", () => {
   });
 });
 
+describe("races and fail-closed key handling", () => {
+  it("lets only one of two simultaneous probes run", async () => {
+    const seen: Seen[] = [];
+    let open!: () => void;
+    t = await signedInApp({}, { aiFetch: fakeOpenAI(seen, { gate: new Promise<void>((r) => { open = r; }) }) });
+    await save({ mode: "openai_compatible", baseUrl: OLLAMA, model: "m", revision: 0 });
+    const a = t.req({ method: "POST", url: "/api/ai/probe", payload: {} });
+    const b = t.req({ method: "POST", url: "/api/ai/probe", payload: {} });
+    setTimeout(open, 20);
+    const codes = (await Promise.all([a, b])).map((r) => r.statusCode).sort();
+    expect(codes).toEqual([200, 429]);
+    expect(seen).toHaveLength(3);
+  });
+
+  it("never pairs a stored key with an endpoint it was not saved for", async () => {
+    t = await signedInApp({ HUB_SECRET_KEY: "k" }, { aiFetch: fakeOpenAI([]), aiResolve: async () => [{ address: "203.0.113.10" }] });
+    const st = AIStatus.parse((await save({ mode: "openai_compatible", baseUrl: "https://a.example/v1", model: "m", key: { op: "replace", value: KEY }, revision: 0 })).json());
+    expect(st.key.set).toBe(true);
+    // Simulate a save that updated the row for endpoint B but crashed before touching the key file.
+    t.app.database.sqlite.prepare("UPDATE ai_settings SET base_url = ?, key_binding = ? WHERE id = 1").run("https://b.example/v1", "openai_compatible|https://b.example/v1");
+    expect((await status()).key.set).toBe(false);
+  });
+
+  it("stops at a refusal instead of spending the structured budget", async () => {
+    const seen: Seen[] = [];
+    const p = new SdkProvider("t", createOpenAICompatible({ name: "t", baseURL: OLLAMA, fetch: fakeOpenAI(seen, { finish: "content_filter" }) }).chatModel("m"));
+    const r = await p.generateObject({ prompt: "x", schema: z.object({ answer: z.number() }), maxOutputTokens: 64 }, new AbortController().signal);
+    expect(r).toMatchObject({ ok: false, error: "refused" });
+    expect(seen).toHaveLength(1);
+  });
+
+  it("applies the deadline to DNS resolution too", async () => {
+    const f = guardedFetch(30, (async () => new Response("x")) as typeof fetch, () => new Promise(() => undefined));
+    await expect(f("http://stalled.example/v1/chat/completions")).rejects.toMatchObject({ name: "TimeoutError" });
+    const ac = new AbortController();
+    const g = guardedFetch(60_000, (async () => new Response("x")) as typeof fetch, () => new Promise(() => undefined));
+    const pending = g("http://stalled.example/v1", { signal: ac.signal });
+    ac.abort();
+    await expect(pending).rejects.toBeDefined();
+  });
+});
+
 describe("structured output budget", () => {
   const provider = (answers: string[], seen: Seen[]) =>
-    new SdkProvider("t", createOpenAICompatible({ name: "t", baseURL: OLLAMA, fetch: fakeOpenAI(seen, { json: answers }) }).chatModel("m"));
+    new SdkProvider("t", createOpenAICompatible({ name: "t", baseURL: OLLAMA, fetch: fakeOpenAI(seen, { json: answers }), supportsStructuredOutputs: true }).chatModel("m"));
 
   it("falls back to JSON text and one repair turn, within three attempts in all", async () => {
     const seen: Seen[] = [];
@@ -159,6 +205,8 @@ describe("structured output budget", () => {
     const r = await p.generateObject({ prompt: "2+2", schema: z.object({ answer: z.number() }), maxOutputTokens: 64 }, new AbortController().signal);
     expect(r).toEqual({ ok: true, value: { answer: 4 }, attempts: 3 });
     expect(String((seen[2]!.body.messages as { content: string }[]).at(-1)!.content)).toContain("answer");
+    expect(seen[0]!.body.response_format).toMatchObject({ type: "json_schema" }); // native schema first
+    expect(String((seen[1]!.body.messages as { content: string }[]).at(-1)!.content)).toContain('"answer":{"type":"number"}'); // schema in the fallback
   });
 
   it("gives up as schema_invalid after the budget, and maxAttempts: 1 means no fallback", async () => {
@@ -174,8 +222,13 @@ describe("structured output budget", () => {
 
 describe("endpoint policy", () => {
   it("blocks metadata, link-local, unspecified and multicast; allows loopback and LAN", () => {
-    for (const ip of ["169.254.169.254", "0.0.0.0", "224.0.0.1", "fe80::1", "::", "ff02::1", "::ffff:169.254.169.254", "fd00:ec2::254", "nonsense"]) expect(addressBlocked(ip)).toBe(true);
+    for (const ip of ["169.254.169.254", "0.0.0.0", "224.0.0.1", "fe80::1", "::", "ff02::1", "::ffff:169.254.169.254", "::ffff:a9fe:a9fe", "0:0:0:0:0:ffff:a9fe:a9fe", "::ffff:0:0", "fe80::1%eth0", "FF02::1", "fd00:ec2:0::254", "nonsense"]) expect(addressBlocked(ip)).toBe(true);
     for (const ip of ["127.0.0.1", "192.168.1.20", "10.0.0.5", "::1", "203.0.113.10"]) expect(addressBlocked(ip)).toBe(false);
+    expect(addressBlocked("::ffff:7f00:1")).toBe(false); // mapped loopback is loopback
+    expect(new URL("http://[::ffff:169.254.169.254]/").hostname).toBe("[::ffff:a9fe:a9fe]"); // why hex forms matter
     expect(validateBaseUrl("http://localhost:11434/v1/")).toBe("http://localhost:11434/v1");
+    expect(localityOf("https://fcloud.example/v1")).toBe("remote");
+    expect(localityOf("http://[fd12::5]:11434/v1")).toBe("local");
+    expect(localityOf("http://192.168.1.20:1234/v1")).toBe("local");
   });
 });

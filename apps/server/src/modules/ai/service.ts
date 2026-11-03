@@ -5,7 +5,8 @@ import { z } from "zod";
 import type { AIStatus, ProbeResult, SaveAISettings } from "@hub/contracts";
 import type { Db } from "../../lib/db/index.ts";
 import { aiSettings } from "../../lib/db/schema.ts";
-import { EndpointError, guardedFetch, validateBaseUrl, type Resolve } from "./net.ts";
+import { isIP } from "node:net";
+import { EndpointError, guardedFetch, parseV6, validateBaseUrl, type Resolve } from "./net.ts";
 import { MockProvider, SdkProvider, type AIProvider } from "./provider.ts";
 import { maskSecret, type SecretStore } from "./secrets.ts";
 
@@ -26,7 +27,9 @@ export function localityOf(baseUrl: string): "local" | "remote" {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
     return a === 127 || a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) ? "local" : "remote";
   }
-  return /^f[cd]/.test(host) ? "local" : "remote";
+  if (isIP(host) !== 6) return "remote";
+  const g = parseV6(host);
+  return g && (g[0]! & 0xfe00) === 0xfc00 ? "local" : "remote"; // unique local fc00::/7
 }
 
 export type SaveOutcome = { kind: "ok"; status: AIStatus } | { kind: "conflict" } | { kind: "invalid"; reason: string };
@@ -43,6 +46,7 @@ export class AIService {
   private readonly allowMock: boolean;
   private readonly resolve: Resolve | undefined;
   private probing = false;
+  private saving: Promise<unknown> = Promise.resolve();
   private lastProbe = 0;
 
   constructor(db: Db, secrets: SecretStore, opts: { fetch?: typeof fetch; allowMock?: boolean; resolve?: Resolve } = {}) {
@@ -62,14 +66,28 @@ export class AIService {
 
   private binding(r: Pick<Row, "mode" | "baseUrl">) { return `${r.mode}|${r.baseUrl}`; }
 
-  /** The stored key, only for the endpoint it was saved for. */
+  /**
+   * The stored key, only for the endpoint it was saved for. The binding is stored inside the (encrypted) secret
+   * as well as in the row, and both must match the row's endpoint: a half-finished save fails closed.
+   */
   private async keyFor(r: Row): Promise<string | null> {
-    if (r.keyBinding !== this.binding(r)) return null;
-    return this.secrets.get(KEY);
+    const binding = this.binding(r);
+    if (r.keyBinding !== binding) return null;
+    const raw = await this.secrets.get(KEY);
+    if (!raw) return null;
+    try {
+      const v = JSON.parse(raw) as { b?: unknown; k?: unknown };
+      return v.b === binding && typeof v.k === "string" ? v.k : null;
+    } catch {
+      return null;
+    }
   }
 
   async status(): Promise<AIStatus> {
-    const r = this.row();
+    return this.statusOf(this.row());
+  }
+
+  private async statusOf(r: Row): Promise<AIStatus> {
     const key = await this.keyFor(r);
     const needsKey = r.mode === "anthropic";
     const ready = r.mode !== "disabled" && r.model !== "" && (r.mode !== "openai_compatible" || r.baseUrl !== "") && (!needsKey || key !== null);
@@ -82,7 +100,14 @@ export class AIService {
     };
   }
 
-  async save(input: SaveAISettings): Promise<SaveOutcome> {
+  /** Saves run one at a time, so the key file and the row never interleave between two saves. */
+  save(input: SaveAISettings): Promise<SaveOutcome> {
+    const run = this.saving.then(() => this.saveNow(input));
+    this.saving = run.catch(() => undefined);
+    return run;
+  }
+
+  private async saveNow(input: SaveAISettings): Promise<SaveOutcome> {
     if (input.mode === "mock" && !this.allowMock) return { kind: "invalid", reason: "mode" };
     let baseUrl = "";
     if (input.mode === "openai_compatible") {
@@ -94,6 +119,10 @@ export class AIService {
     // A key moves with its endpoint only when it is entered again; switching endpoints drops it.
     const sameEndpoint = this.binding(current) === this.binding(next);
     const keyAction: "keep" | "set" | "clear" = input.key.op === "replace" ? "set" : input.key.op === "clear" || !sameEndpoint ? "clear" : "keep";
+    // The secret is written first. It names its endpoint, so until the row agrees no reader can pair it with
+    // another endpoint; if the row update then fails, the old key is gone, never sent somewhere new.
+    if (keyAction === "set" && input.key.op === "replace") await this.secrets.set(KEY, JSON.stringify({ b: this.binding(next), k: input.key.value }));
+    if (keyAction === "clear") await this.secrets.set(KEY, null);
     const changed = this.db.transaction((tx) => {
       const r = tx.select().from(aiSettings).where(eq(aiSettings.id, 1)).get()!;
       if (r.revision !== input.revision) return false;
@@ -104,38 +133,53 @@ export class AIService {
       return true;
     }, IMMEDIATE);
     if (!changed) return { kind: "conflict" };
-    if (keyAction === "set" && input.key.op === "replace") await this.secrets.set(KEY, input.key.value);
-    if (keyAction === "clear") await this.secrets.set(KEY, null);
     return { kind: "ok", status: await this.status() };
   }
 
   /** The configured provider, or null when AI is off or incomplete. Used by AI features (core never imports this). */
   async provider(): Promise<AIProvider | null> {
-    const r = this.row();
-    const st = await this.status();
+    return this.providerFor(this.row());
+  }
+
+  /** Builds the provider from one settings snapshot, so a concurrent save cannot mix two configurations. */
+  private async providerFor(r: Row): Promise<AIProvider | null> {
+    const st = await this.statusOf(r);
     if (!st.ready) return null;
     const fetchImpl = guardedFetch(CALL_TIMEOUT_MS, this.fetchImpl, this.resolve);
     if (r.mode === "mock") return new MockProvider([{ answer: 4 }]);
+    const key = await this.keyFor(r);
     if (r.mode === "anthropic") {
-      const key = (await this.keyFor(r))!;
+      if (!key) return null;
       return new SdkProvider("anthropic", createAnthropic({ apiKey: key, baseURL: ANTHROPIC_URL, fetch: fetchImpl })(r.model));
     }
-    const key = await this.keyFor(r);
-    const p = createOpenAICompatible({ name: "openai-compatible", baseURL: r.baseUrl, ...(key ? { apiKey: key } : {}), fetch: fetchImpl });
+    // Native JSON-schema output first (Ollama, LM Studio, vLLM, OpenAI support it); the provider falls back otherwise.
+    const p = createOpenAICompatible({ name: "openai-compatible", baseURL: r.baseUrl, ...(key ? { apiKey: key } : {}), fetch: fetchImpl, supportsStructuredOutputs: true });
     return new SdkProvider("openai_compatible", p.chatModel(r.model));
   }
 
   /**
    * Runs three small fixed tests (text, one schema without repair, one tool call with no handler) and stores
-   * the result for the current settings revision only. One at a time, at most one every few seconds.
+   * the result for the settings revision it tested. One at a time, at most one every few seconds.
    */
   async probe(): Promise<ProbeOutcome> {
     if (this.probing || Date.now() - this.lastProbe < PROBE_GAP_MS) return { kind: "busy" };
-    const provider = await this.provider();
-    if (!provider) return { kind: "not_ready" };
-    this.probing = true;
-    const revision = this.row().revision;
-    const max = Math.min(this.row().maxOutputTokens, 256);
+    this.probing = true; // taken before the first await: two requests cannot both pass the check
+    try {
+      const snapshot = this.row();
+      const provider = await this.providerFor(snapshot);
+      if (!provider) return { kind: "not_ready" };
+      const results = await this.runProbes(provider, Math.min(snapshot.maxOutputTokens, 256));
+      this.lastProbe = Date.now();
+      // Stored under the tested revision; status() shows it only while that revision is current.
+      this.db.update(aiSettings).set({ probesJson: JSON.stringify(results), probedRevision: snapshot.revision, probedAt: new Date().toISOString() })
+        .where(eq(aiSettings.id, 1)).run();
+      return { kind: "ok", status: await this.status() };
+    } finally {
+      this.probing = false;
+    }
+  }
+
+  private async runProbes(provider: AIProvider, max: number): Promise<ProbeResult[]> {
     const results: ProbeResult[] = [];
     const timed = async (capability: ProbeResult["capability"], run: (signal: AbortSignal) => Promise<ProbeResult["error"]>) => {
       const t0 = Date.now();
@@ -143,30 +187,22 @@ export class AIService {
       const error = await run(signal).catch(() => "unknown" as const);
       results.push({ capability, ok: error === null, error, ms: Date.now() - t0 });
     };
-    try {
-      await timed("text", async (signal) => {
-        let got = false;
-        for await (const ev of provider.generateText({ prompt: "Reply with the single word: ready", maxOutputTokens: max }, signal)) {
-          if (ev.type === "delta") got = true;
-          if (ev.type === "error") return ev.code;
-        }
-        return got ? null : "capability_missing";
-      });
-      await timed("structured", async (signal) => {
-        const r = await provider.generateObject({ prompt: "What is 2 + 2? Give it as the field `answer`.", schema: z.object({ answer: z.number() }), maxOutputTokens: max, maxAttempts: 1 }, signal);
-        return r.ok ? null : r.error;
-      });
-      await timed("tools", async (signal) => {
-        const r = await provider.callTool({ prompt: "Use the tool to look up the topic 'pipes'.", toolName: "lookup_topic", description: "Looks up a study topic by name.", inputSchema: z.object({ name: z.string() }), maxOutputTokens: max }, signal);
-        return r.ok ? null : r.error;
-      });
-    } finally {
-      this.probing = false;
-      this.lastProbe = Date.now();
-    }
-    // Settings changed while testing: the results describe a configuration that no longer exists.
-    this.db.update(aiSettings).set({ probesJson: JSON.stringify(results), probedRevision: revision, probedAt: new Date().toISOString() })
-      .where(eq(aiSettings.id, 1)).run();
-    return { kind: "ok", status: await this.status() };
+    await timed("text", async (signal) => {
+      let got = false;
+      for await (const ev of provider.generateText({ prompt: "Reply with the single word: ready", maxOutputTokens: max }, signal)) {
+        if (ev.type === "delta") got = true;
+        if (ev.type === "error") return ev.code;
+      }
+      return got ? null : "capability_missing";
+    });
+    await timed("structured", async (signal) => {
+      const r = await provider.generateObject({ prompt: "What is 2 + 2? Give it as the field `answer`.", schema: z.object({ answer: z.number() }), maxOutputTokens: max, maxAttempts: 1 }, signal);
+      return r.ok ? null : r.error;
+    });
+    await timed("tools", async (signal) => {
+      const r = await provider.callTool({ prompt: "Use the tool to look up the topic 'pipes'.", toolName: "lookup_topic", description: "Looks up a study topic by name.", inputSchema: z.object({ name: z.string() }), maxOutputTokens: max }, signal);
+      return r.ok ? null : r.error;
+    });
+    return results;
   }
 }
