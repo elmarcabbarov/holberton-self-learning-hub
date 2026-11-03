@@ -82,11 +82,12 @@ export function begin(db: Db, id: string, input: SendTutorMessage, session: Tuto
     let hintLevel = old?.hintLevel ?? null;
     let approachStep = old?.approachStep ?? null;
     if (!old) {
-      // A new attempt after a failed hint also stays at the failed level. Completed hints alone advance.
-      const lastOfKind = tx.select().from(tutorMessages).where(and(eq(tutorMessages.threadId, id), eq(tutorMessages.role, "assistant"), eq(tutorMessages.kind, input.kind))).orderBy(desc(tutorMessages.seq)).get();
-      const advance = !lastOfKind || lastOfKind.status === "complete";
-      if (input.kind === "hint") hintLevel = Math.max(1, Math.min(4, thread.hintLevel + (advance ? 1 : 0)));
-      if (input.kind === "approach") approachStep = Math.max(1, Math.min(5, thread.approachStep + (advance ? 1 : 0)));
+      // The ladder moves up only once the current rung has a completed answer (from any request, including a
+      // retry). Until then a new request stays on the current rung, so failed attempts never skip a level.
+      const rungDone = (column: typeof tutorMessages.hintLevel, rung: number) => rung > 0 && tx.select({ id: tutorMessages.id }).from(tutorMessages)
+        .where(and(eq(tutorMessages.threadId, id), eq(tutorMessages.role, "assistant"), eq(tutorMessages.kind, input.kind), eq(column, rung), eq(tutorMessages.status, "complete"))).get() !== undefined;
+      if (input.kind === "hint") hintLevel = Math.max(1, Math.min(4, thread.hintLevel + (thread.hintLevel === 0 || rungDone(tutorMessages.hintLevel, thread.hintLevel) ? 1 : 0)));
+      if (input.kind === "approach") approachStep = Math.max(1, Math.min(5, thread.approachStep + (thread.approachStep === 0 || rungDone(tutorMessages.approachStep, thread.approachStep) ? 1 : 0)));
     }
     const provenance = { mode, providerId: session.providerId, model: session.model, revision: session.revision, promptVersion: PROMPT_VERSION };
     let assistantId: string;

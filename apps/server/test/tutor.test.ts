@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { TutorEvent, TutorThreadDetail } from "@hub/contracts";
 import { MockProvider } from "../src/modules/ai/provider.ts";
 import { AIService } from "../src/modules/ai/service.ts";
+import { ExamService } from "../src/modules/exam-mode/service.ts";
 import { signedInApp, type TestApp } from "./helpers.ts";
 
 let t: TestApp | undefined;
@@ -61,6 +62,30 @@ describe("Framework tutor", () => {
     expect(events((await send(thread.id)).body)[0]).toMatchObject({ data: { hintLevel: 2 } });
   });
 
+  it("advances once the current rung completes, even through an older retry", async () => {
+    const { thread } = await setup();
+    const a = randomUUID();
+    mock.script = { deltas: ["x"], error: "unreachable" };
+    expect(events((await send(thread.id, "hint", a)).body)[0]).toMatchObject({ data: { hintLevel: 1 } });
+    expect(events((await send(thread.id)).body)[0]).toMatchObject({ data: { hintLevel: 1 } }); // B also fails at 1
+    mock.script = { deltas: ["ok"] };
+    expect(events((await send(thread.id, "hint", a)).body)[0]).toMatchObject({ data: { hintLevel: 1 } }); // retry A succeeds
+    expect(events((await send(thread.id)).body)[0]).toMatchObject({ data: { hintLevel: 2 } });
+  });
+
+  it("lets only one of two simultaneous first requests generate", async () => {
+    const { thread } = await setup();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    vi.mocked(AIService.prototype.session).mockImplementation(async () => { await gate; return { provider: mock, providerId: "mock", model: "test-model", revision: 7, maxOutputTokens: 128, locality: "local" }; });
+    mock.script = { deltas: ["slow"], delayMs: 50 };
+    const both = Promise.all([send(thread.id), send(thread.id)]);
+    setTimeout(release, 10);
+    const codes = (await both).map((r) => r.statusCode).sort();
+    expect(codes).toEqual([200, 409]);
+    expect((await detail(thread.id)).messages.filter((m) => m.role === "assistant")).toHaveLength(1);
+  });
+
   it("tracks the five approach steps and re-reads mode per generation", async () => {
     const { space, thread } = await setup();
     for (const step of [1, 2, 3, 4, 5, 5]) expect(events((await send(thread.id, "approach")).body)[0]).toMatchObject({ data: { approachStep: step } });
@@ -68,6 +93,20 @@ describe("Framework tutor", () => {
     expect(events((await send(thread.id, "explain")).body)[0]).toMatchObject({ data: { mode: "project" } });
     expect((await detail(thread.id)).messages.at(-1)).toMatchObject({ mode: "project" });
     expect(mock.lastRequest?.system).toContain("Never return corrected learner code");
+  });
+});
+
+describe("exam mode state", () => {
+  it("survives a restart (state is in the database) and ends on its own at expiry", async () => {
+    const { thread } = await setup();
+    const until = new Date(Date.now() + 60_000).toISOString();
+    await t!.req({ method: "PUT", url: "/api/exam-mode", payload: { until } });
+    expect(new ExamService(t!.app.database.db).active()).toBe(true); // a fresh service, as after a restart
+    expect((await send(thread.id)).statusCode).toBe(423);
+    const later = Date.now() + 61_000;
+    vi.spyOn(Date, "now").mockReturnValue(later);
+    expect((await t!.req({ method: "GET", url: "/api/exam-mode" })).json()).toEqual({ until: null });
+    expect((await send(thread.id)).statusCode).toBe(200);
   });
 });
 

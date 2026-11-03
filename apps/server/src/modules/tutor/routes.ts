@@ -24,8 +24,11 @@ export async function registerTutorRoutes(app: FastifyInstance, database: Databa
   const { db } = database;
   svc.recover(db);
   const running = new Set<Promise<void>>();
-  // compose registers after the database hook: Fastify closes hooks in reverse order.
-  app.addHook("onClose", async () => { exam.abortAll("cancelled"); await Promise.allSettled(running); });
+  // preClose runs before Fastify waits for open connections: an SSE stream must be cancelled first, or a
+  // stalled consumer would hold shutdown. onClose (reverse order, before the database closes) waits for the
+  // finalizers.
+  app.addHook("preClose", async () => { exam.abortAll("cancelled"); });
+  app.addHook("onClose", async () => { await Promise.allSettled(running); });
 
   app.post("/api/tutor/threads", async (req, reply) => respond(reply, () => {
     const b = CreateTutorThread.safeParse(req.body);
