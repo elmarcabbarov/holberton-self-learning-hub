@@ -41,6 +41,7 @@ function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
   return (
     <li className="flex flex-wrap items-center gap-2 py-2">
       <span className="flex-1">{topic.name}</span>
+      <Link to="/spaces/$spaceId/tutor" params={{ spaceId }} search={{ topicId: topic.id }} className="text-[14px] text-muted underline underline-offset-4">{t("tutor.ask")}</Link>
       <Button variant="ghost" aria-label={t("topics.rename", { name: topic.name })} onClick={() => setEditing(true)}><Pencil size={16} aria-hidden /></Button>
       <ConfirmButton
         ariaLabel={t("topics.archive", { name: topic.name })}
@@ -95,6 +96,18 @@ export function SpaceDetailPage() {
         ><Archive size={16} aria-hidden />{t("spaces.archive")}</ConfirmButton>
       </div>
       {updateSpace.isError ? <p role="alert" className="mt-3 text-[14px] text-fg">{t("errors.saveFailed")}</p> : null}
+
+      <div className="mt-6 flex flex-wrap items-end gap-4">
+        <Link to="/spaces/$spaceId/tutor" params={{ spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[14px] font-medium">{t("tutor.ask")}</Link>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="tutor-mode" className="text-[13px] text-muted">{t("tutor.mode")}</label>
+          <select id="tutor-mode" value={space.data.tutorMode ?? "project"} disabled={updateSpace.isPending} onChange={(e) => updateSpace.mutate({ tutorMode: e.target.value as "project" | "explain" })} aria-describedby="tutor-mode-note" className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3">
+            <option value="project">{t("tutor.modes.project")}</option>
+            <option value="explain">{t("tutor.modes.explain")}</option>
+          </select>
+        </div>
+        <p id="tutor-mode-note" className="w-full text-[13px] text-muted">{t(`tutor.modeHelp.${space.data.tutorMode ?? "project"}`)}</p>
+      </div>
 
       <Card className="mt-8">
         <h2 className="text-[20px] font-medium">{t("topics.title")}</h2>

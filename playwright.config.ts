@@ -15,6 +15,6 @@ export default defineConfig({
     // Never reuse: a stale server with an old build makes e2e results lie.
     reuseExistingServer: false,
     // A small read-only linked vault (D-062) checked into the repo.
-    env: { HUB_PORT: String(PORT), HUB_WEB_DIST: "apps/web/dist", HUB_DATA: ".data/e2e", HUB_LINKED_VAULT: "e2e/fixtures/linked-vault", LOG_LEVEL: "warn" },
+    env: { HUB_PORT: String(PORT), HUB_WEB_DIST: "apps/web/dist", HUB_DATA: ".data/e2e", HUB_LINKED_VAULT: "e2e/fixtures/linked-vault", HUB_AI_MOCK: "1", LOG_LEVEL: "warn" },
   },
 });

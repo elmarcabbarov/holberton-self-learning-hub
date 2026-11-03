@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { CalendarCheck, FileText, FolderTree, Layers, Settings } from "lucide-react";
 import type { ComponentType } from "react";
 import { fetchHealth } from "../api.ts";
+import { useExamMode } from "../features/examMode.ts";
 
 type NavItem = { to: string; key: string; icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }> };
 
@@ -33,7 +34,8 @@ function RailLink({ item, label }: { item: NavItem; label: string }) {
 }
 
 export function AppShell() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const exam = useExamMode();
   const health = useQuery({ queryKey: ["health"], queryFn: fetchHealth, refetchInterval: 30_000, retry: 1 });
 
   return (
@@ -51,6 +53,7 @@ export function AppShell() {
         </div>
       </nav>
       <div className="flex min-w-0 flex-1 flex-col">
+        {exam.data?.until ? <div role="status" className="border-b border-line bg-surface px-6 py-3 text-[14px] text-muted md:px-10">{t("exam.banner", { time: new Date(exam.data.until).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" }) })}</div> : null}
         <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 md:px-10">
           <Outlet />
         </main>
