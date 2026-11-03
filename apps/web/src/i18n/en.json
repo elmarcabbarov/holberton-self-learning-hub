@@ -550,6 +550,104 @@
     "examMode": "AI is paused during exam mode. You can end exam mode early.",
     "conflict": "This thread or request cannot be changed right now.",
     "busy": "A response is already being generated in this thread.",
-    "hintsRequired": "Complete three hints before drafting a question for a peer."
+    "hintsRequired": "Complete three hints before drafting a question for a peer.",
+    "title": "Framework tutor",
+    "ask": "Ask the tutor",
+    "threads": "Threads",
+    "new": "New thread",
+    "archived": "Show archived threads",
+    "empty": "No threads here yet.",
+    "general": "General question",
+    "framework": "The Framework (optional)",
+    "frameworkIntro": "Three short notes about where you are stuck. Leave any field blank, or skip if you have already done this.",
+    "topic": "Topic (optional)",
+    "frameworkFields": {
+      "read": "What did you read?",
+      "error": "What does the error say?",
+      "rephrase": "The problem in your own words"
+    },
+    "begin": "Start conversation",
+    "skip": "I already did this — skip",
+    "conversation": "Conversation",
+    "messages": "Messages",
+    "archive": "Archive thread",
+    "retry": "Try again",
+    "thinking": "Thinking…",
+    "roles": {
+      "user": "You",
+      "assistant": "Tutor"
+    },
+    "kind": {
+      "chat": "Reply",
+      "explain": "Explanation"
+    },
+    "hintLevel": "Hint {level} of 4",
+    "approachStep": "Approach step {step} of 5",
+    "modes": {
+      "project": "Project",
+      "explain": "Explain"
+    },
+    "mode": "Tutor mode",
+    "modeHelp": {
+      "project": "Hints and questions to help you work through the task; no task solutions.",
+      "explain": "Full explanations, examples and questions for personal learning."
+    },
+    "composer": "Message the tutor",
+    "message": "Your question or reply",
+    "send": "Send",
+    "actions": {
+      "hint": "Next hint",
+      "explain": "Explain fully",
+      "approach": "Approach a project step"
+    },
+    "stop": "Stop",
+    "peer": "Ask a peer",
+    "peerIntro": "Write what you tried yourself. This draft uses your words and the suggestions you received, without AI.",
+    "tried": "What I tried",
+    "draft": "Create peer draft",
+    "draftText": "Draft for a peer",
+    "copy": "Copy",
+    "copied": "Copied.",
+    "select": "Text selected. Use your keyboard or context menu to copy.",
+    "aiOff": "AI is off. Turn it on in Settings to use the tutor.",
+    "aiNotReady": "AI is not ready. Finish setting up your provider and model to use the tutor.",
+    "settings": "Settings → AI",
+    "remote": "Your messages, the topic and your Framework answers are sent to {provider}. No notes are sent.",
+    "error": {
+      "unreachable": "Could not reach the model server.",
+      "auth": "The provider refused the API key.",
+      "rate_limited": "The provider is busy. Try again later.",
+      "context_overflow": "This conversation is too long for the model.",
+      "schema_invalid": "The model returned an unexpected answer format.",
+      "refused": "The model declined this request.",
+      "timeout": "The response timed out. You can try again.",
+      "cancelled": "The response was stopped.",
+      "capability_missing": "This model does not support the requested feature.",
+      "unknown": "The response failed. Please try again.",
+      "exam_mode": "AI is paused during exam mode.",
+      "interrupted": "The response was interrupted. You can try again.",
+      "not_ready": "AI is not ready. Check Settings → AI.",
+      "archived": "This thread or space is archived. Restore it to continue.",
+      "not_found": "This thread or space could not be found.",
+      "validation_failed": "Check the fields and try again.",
+      "payload_conflict": "This request was already sent with different content. Send a new message.",
+      "busy": "A response is already being generated in this thread.",
+      "hints_required": "Complete three hints before drafting a question for a peer."
+    },
+    "actionText": {
+      "hint": "Next hint, please.",
+      "explain": "Please explain this fully.",
+      "approach": "Let's do the next step of approaching the project."
+    }
+  },
+  "exam": {
+    "title": "Exam mode",
+    "intro": "Pause all AI while you work independently. You can end this voluntary mode early.",
+    "until": "Exam mode until {time}.",
+    "end": "End now",
+    "hours": "Start for {hours} h",
+    "chosen": "Until a chosen time",
+    "start": "Start exam mode",
+    "banner": "Exam mode until {time} — AI is off"
   }
 }

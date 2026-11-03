@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AIStatus, type AIMode } from "@hub/contracts";
 import { ApiError, apiJson } from "../api.ts";
 import { Button, TextInput } from "./ui.tsx";
+import { useExamMode } from "../features/examMode.ts";
 
 const PRESETS = [
   { label: "Ollama", url: "http://localhost:11434/v1" },
@@ -17,6 +18,7 @@ const KEY = ["ai", "status"] as const;
 export function AIPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const exam = useExamMode();
   // A late answer (a slow probe, an old refetch) must never roll the form back to an older revision, and a
   // newer one must never be discarded: every path keeps whichever revision is higher.
   const newest = (next: AIStatus) => {
@@ -106,7 +108,7 @@ export function AIPanel() {
         <div className="mt-6 border-t border-line pt-5">
           <p className="text-[14px]">{s.ready ? t("ai.ready", { model: s.model }) : t("ai.notReady")}</p>
           <p className="mt-1 max-w-prose text-[13px] text-muted">{t("ai.testNote")}</p>
-          <Button className="mt-3" onClick={() => probe.mutate()} disabled={!s.ready || probe.isPending}>{probe.isPending ? t("ai.testing") : t("ai.test")}</Button>
+          <Button className="mt-3" onClick={() => probe.mutate()} disabled={!s.ready || probe.isPending || !exam.isSuccess || !!exam.data.until}>{probe.isPending ? t("ai.testing") : t("ai.test")}</Button>
           {probe.isError ? <p role="alert" className="mt-2 text-[14px]">{t(errorKey(probe.error))}</p> : null}
           {s.probes ? (
             <ul className="mt-4 space-y-1 text-[14px]" aria-label={t("ai.results")}>

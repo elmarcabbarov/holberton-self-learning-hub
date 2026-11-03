@@ -550,6 +550,104 @@
     "examMode": "İmtahan rejimində süni intellekt dayandırılıb. İmtahan rejimini vaxtından əvvəl bitirə bilərsiniz.",
     "conflict": "Bu söhbəti və ya sorğunu hazırda dəyişmək mümkün deyil.",
     "busy": "Bu söhbətdə artıq cavab hazırlanır.",
-    "hintsRequired": "Yoldaşınıza sual hazırlamazdan əvvəl üç məsləhətin tamamlanmasını gözləyin."
+    "hintsRequired": "Yoldaşınıza sual hazırlamazdan əvvəl üç məsləhətin tamamlanmasını gözləyin.",
+    "title": "Framework üzrə köməkçi",
+    "ask": "Köməkçidən soruş",
+    "threads": "Söhbətlər",
+    "new": "Yeni söhbət",
+    "archived": "Arxivlənmiş söhbətləri göstər",
+    "empty": "Hələ söhbət yoxdur.",
+    "general": "Ümumi sual",
+    "framework": "The Framework (istəyə bağlı)",
+    "frameworkIntro": "Harada ilişdiyin barədə üç qısa qeyd. İstənilən sahəni boş saxlaya və ya bu addımları artıq etmisənsə, yoxlamanı ötürə bilərsən.",
+    "topic": "Mövzu (istəyə bağlı)",
+    "frameworkFields": {
+      "read": "Nə oxumusan?",
+      "error": "Xəta mesajı nə deyir?",
+      "rephrase": "Problem öz sözlərinlə"
+    },
+    "begin": "Söhbətə başla",
+    "skip": "Bunları artıq etmişəm — ötür",
+    "conversation": "Söhbət",
+    "messages": "Mesajlar",
+    "archive": "Söhbəti arxivlə",
+    "retry": "Yenidən cəhd et",
+    "thinking": "Düşünür…",
+    "roles": {
+      "user": "Sən",
+      "assistant": "Köməkçi"
+    },
+    "kind": {
+      "chat": "Cavab",
+      "explain": "İzah"
+    },
+    "hintLevel": "İpucu {level} / 4",
+    "approachStep": "Yanaşma addımı {step} / 5",
+    "modes": {
+      "project": "Layihə",
+      "explain": "İzah"
+    },
+    "mode": "Köməkçi rejimi",
+    "modeHelp": {
+      "project": "Tapşırığı özün yerinə yetirəsən deyə ipucları və suallar; tapşırığın hazır həlli verilmir.",
+      "explain": "Fərdi öyrənmə üçün ətraflı izahlar, nümunələr və suallar."
+    },
+    "composer": "Köməkçiyə yaz",
+    "message": "Sualın və ya cavabın",
+    "send": "Göndər",
+    "actions": {
+      "hint": "Növbəti ipucu",
+      "explain": "Ətraflı izah et",
+      "approach": "Layihəyə yanaşmanın növbəti addımı"
+    },
+    "stop": "Dayandır",
+    "peer": "Yoldaşından soruş",
+    "peerIntro": "Nə cəhd etdiyini özün yaz. Bu qaralama süni intellektsiz, sənin sözlərin və aldığın məsləhətlər əsasında hazırlanır.",
+    "tried": "Nə cəhd etdim",
+    "draft": "Yoldaş üçün qaralama hazırla",
+    "draftText": "Yoldaşa göndəriləcək qaralama",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı.",
+    "select": "Mətn seçildi. Klaviatura və ya kontekst menyusu ilə kopyala.",
+    "aiOff": "Süni intellekt söndürülüb. Köməkçidən istifadə etmək üçün onu Ayarlarda aktivləşdir.",
+    "aiNotReady": "Süni intellekt hazır deyil. Köməkçidən istifadə etmək üçün provayder və model ayarlarını tamamla.",
+    "settings": "Ayarlar → Süni intellekt",
+    "remote": "Mesajların, mövzu və Framework cavabların {provider} ünvanına göndərilir. Qeydlər göndərilmir.",
+    "error": {
+      "unreachable": "Model serverinə qoşulmaq olmadı.",
+      "auth": "Provayder API açarını qəbul etmədi.",
+      "rate_limited": "Provayder məşğuldur. Bir az sonra yenidən cəhd et.",
+      "context_overflow": "Bu söhbət model üçün çox uzundur.",
+      "schema_invalid": "Model gözlənilməyən formatda cavab verdi.",
+      "refused": "Model bu sorğunu rədd etdi.",
+      "timeout": "Cavab üçün gözləmə vaxtı bitdi. Yenidən cəhd edə bilərsən.",
+      "cancelled": "Cavab dayandırıldı.",
+      "capability_missing": "Bu model istənilən funksiyanı dəstəkləmir.",
+      "unknown": "Cavab alınmadı. Yenidən cəhd et.",
+      "exam_mode": "İmtahan rejimində süni intellekt dayandırılıb.",
+      "interrupted": "Cavab yarımçıq qaldı. Yenidən cəhd edə bilərsən.",
+      "not_ready": "Süni intellekt hazır deyil. Ayarlar → Süni intellekt bölməsini yoxla.",
+      "archived": "Bu söhbət və ya sahə arxivlənib. Davam etmək üçün bərpa et.",
+      "not_found": "Bu söhbət və ya sahə tapılmadı.",
+      "validation_failed": "Sahələri yoxla və yenidən cəhd et.",
+      "payload_conflict": "Bu sorğu artıq başqa məzmunla göndərilib. Yeni mesaj göndər.",
+      "busy": "Bu söhbətdə artıq cavab hazırlanır.",
+      "hints_required": "Yoldaş üçün qaralama hazırlamazdan əvvəl üç ipucunu tamamla."
+    },
+    "actionText": {
+      "hint": "Növbəti ipucunu ver, zəhmət olmasa.",
+      "explain": "Bunu tam izah et, zəhmət olmasa.",
+      "approach": "Layihəyə yanaşmanın növbəti addımına keçək."
+    }
+  },
+  "exam": {
+    "title": "İmtahan rejimi",
+    "intro": "Müstəqil işləyərkən bütün süni intellekt funksiyalarını dayandır. Bu könüllü rejimdən vaxtından əvvəl çıxa bilərsən.",
+    "until": "İmtahan rejimi {time} tarixinədək aktivdir.",
+    "end": "İndi bitir",
+    "hours": "{hours} saatlıq başlat",
+    "chosen": "Seçilmiş vaxtadək",
+    "start": "İmtahan rejimini başlat",
+    "banner": "İmtahan rejimi {time} vaxtınadək — süni intellekt söndürülüb"
   }
 }
