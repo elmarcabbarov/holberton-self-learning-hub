@@ -242,7 +242,19 @@
     "cardBackWithResources": "Say it out loud or whiteboard it, then check yourself. Could you explain it to a peer? Resources: {resources}",
     "taskPlaceholder": "Task {n}",
     "noteIntro": "Imported from the Holberton intranet on {date}. Solutions are yours to write — follow The Framework.",
-    "noteSkipped": "The project note could not be created with this name. You can create it yourself on the Notes page."
+    "noteSkipped": "The project note could not be created with this name. You can create it yourself on the Notes page.",
+    "withTaskNotes": "{count, plural, one {Create a note for the task} other {Create a note for each of the # tasks}}",
+    "taskNotesDone": "{count, plural, one {# task note created.} other {# task notes created.}}",
+    "taskNotesSkipped": "{count, plural, one {# task note was skipped: its name is taken or not allowed.} other {# task notes were skipped: their names are taken or not allowed.}}",
+    "taskNote": {
+      "project": "Project",
+      "read": "What I read",
+      "problem": "The problem in my own words",
+      "approach": "Approach",
+      "pseudocode": "Pseudocode",
+      "notes": "Notes"
+    },
+    "taskNotesOverLimit": "{count, plural, one {# task is over the limit of 100 task notes per import and gets no note.} other {# tasks are over the limit of 100 task notes per import and get no note.}}"
   },
   "archive": {
     "showSpaces": "Show archived spaces",
@@ -464,7 +476,7 @@
     "remove": "Remove topic {name}",
     "add": "Link to a topic…",
     "spaceTitle": "Notes",
-    "spaceIntro": "Notes linked to this space's topics. Link a note from the note's sidebar; the file itself is not changed.",
+    "spaceIntro": "Notes linked to this space directly or through its topics. Create a new one here, or link an existing note from its sidebar; the file itself is not changed.",
     "spaceListLabel": "Notes linked to this space",
     "spaceEmpty": "No notes linked yet."
   },
@@ -650,5 +662,23 @@
     "chosen": "Until a chosen time",
     "start": "Start exam mode",
     "banner": "Exam mode until {time} — AI is off"
+  },
+  "noteSpaces": {
+    "title": "Spaces",
+    "add": "Link to a space",
+    "remove": "Remove from {name}",
+    "listLabel": "Spaces of this note",
+    "badSpace": "That space no longer exists.",
+    "archived": "This space is archived. Restore it to add notes.",
+    "badTitle": "That title cannot be used as a file name.",
+    "taken": "Too many notes have this title. Choose another one.",
+    "new": "New note",
+    "newTitle": "Note title",
+    "newTopic": "Topic (optional)",
+    "noTopic": "No topic",
+    "create": "Create and open",
+    "folder": "New notes are saved in {folder}.",
+    "linkedDirect": "Linked to the space",
+    "newPlaceholder": "e.g. 3. Linked list"
   }
 }

@@ -6,7 +6,7 @@ import { ImportProjectResult } from "@hub/contracts";
 import { apiJson } from "../api.ts";
 import { Button, Card, PageTitle, TextInput } from "../components/ui.tsx";
 import { parseProject, type ParsedProject } from "../features/import/parseProject.ts";
-import { allObjectiveKeys, buildImport, type ImportTexts } from "../features/import/buildImport.ts";
+import { allObjectiveKeys, buildImport, omittedTaskNotes, type ImportTexts } from "../features/import/buildImport.ts";
 
 export function ImportProject() {
   const { t, i18n } = useTranslation();
@@ -16,6 +16,7 @@ export function ImportProject() {
   const [spaceName, setSpaceName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [withNote, setWithNote] = useState(true);
+  const [withTaskNotes, setWithTaskNotes] = useState(true);
 
   const texts: ImportTexts = useMemo(() => ({
     cardFront: (o) => t("import.cardFront", { objective: o }),
@@ -24,12 +25,13 @@ export function ImportProject() {
     taskPlaceholder: (n) => t("import.taskPlaceholder", { n }),
     noteIntro: (d) => t("import.noteIntro", { date: d }),
     headings: { concepts: t("import.concepts"), resources: t("import.resources"), objectives: t("import.objectives"), requirements: t("import.requirements"), tasks: t("import.tasks") },
+    taskNote: { project: t("import.taskNote.project"), read: t("import.taskNote.read"), problem: t("import.taskNote.problem"), approach: t("import.taskNote.approach"), pseudocode: t("import.taskNote.pseudocode"), notes: t("import.taskNote.notes") },
   }), [t]);
 
   const run = useMutation({
     mutationFn: () => apiJson("/api/import/project", ImportProjectResult, {
       method: "POST",
-      body: buildImport(parsed!, { spaceName, selected, withNote }, texts, new Date().toLocaleDateString(i18n.language)),
+      body: buildImport(parsed!, { spaceName, selected, withNote, withTaskNotes: withTaskNotes && parsed!.tasks.length > 0 }, texts, new Date().toLocaleDateString(i18n.language)),
     }),
     onSuccess: () => { void qc.invalidateQueries(); },
   });
@@ -51,9 +53,12 @@ export function ImportProject() {
         <Card className="mt-8">
           <h2 className="hub-display text-[22px]" role="status">{t("import.done", { cards: run.data.cards, topics: run.data.topics })}</h2>
           {run.data.noteSkipped ? <p role="alert" className="mt-3 text-[14px]">{t("import.noteSkipped")}</p> : null}
+          {run.data.taskNotes > 0 ? <p className="mt-3 text-[14px] text-muted">{t("import.taskNotesDone", { count: run.data.taskNotes })}</p> : null}
+          {run.data.taskNotesSkipped > 0 ? <p role="alert" className="mt-3 text-[14px]">{t("import.taskNotesSkipped", { count: run.data.taskNotesSkipped })}</p> : null}
+          {parsed && withTaskNotes && omittedTaskNotes(parsed) > 0 ? <p role="alert" className="mt-3 text-[14px]">{t("import.taskNotesOverLimit", { count: omittedTaskNotes(parsed) })}</p> : null}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/spaces/$spaceId" params={{ spaceId: run.data.spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-medium text-white hover:bg-brand-dark">{t("import.openSpace")}</Link>
-            {run.data.noteId ? <Link to="/notes/$noteId" params={{ noteId: run.data.noteId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[14px] font-medium hover:bg-surface">{t("import.openNote")}</Link> : null}
+            <Link to="/spaces/$spaceId" params={{ spaceId: run.data.spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-dark">{t("import.openSpace")}</Link>
+            {run.data.noteId ? <Link to="/notes/$noteId" params={{ noteId: run.data.noteId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg">{t("import.openNote")}</Link> : null}
           </div>
         </Card>
       </section>
@@ -114,6 +119,15 @@ export function ImportProject() {
               <input type="checkbox" className="accent-[var(--color-brand)]" checked={withNote} onChange={(e) => setWithNote(e.target.checked)} />
               {t("import.withNote")}
             </label>
+            {parsed.tasks.length > 0 ? (
+              <label className="mt-3 flex items-center gap-2.5 text-[15px]">
+                <input type="checkbox" className="accent-[var(--color-brand)]" checked={withTaskNotes} onChange={(e) => setWithTaskNotes(e.target.checked)} />
+                {t("import.withTaskNotes", { count: parsed.tasks.length })}
+              </label>
+            ) : null}
+            {parsed.tasks.length > 0 && withTaskNotes && omittedTaskNotes(parsed) > 0 ? (
+              <p className="mt-2 text-[14px] text-muted">{t("import.taskNotesOverLimit", { count: omittedTaskNotes(parsed) })}</p>
+            ) : null}
 
             <Button variant="primary" className="mt-6" onClick={() => run.mutate()} disabled={run.isPending || !spaceName.trim() || selected.size === 0}>
               {t("import.import", { count: selected.size })}

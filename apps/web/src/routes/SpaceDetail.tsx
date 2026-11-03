@@ -83,8 +83,8 @@ export function SpaceDetailPage() {
   };
 
   const sections: [string, string][] = [
-    ["sec-topics", t("topics.title")], ["sec-cards", t("cards.title")], ["sec-goals", t("goals.title")],
-    ["sec-notes", t("noteTopics.spaceTitle")], ["sec-quizzes", t("quizzes.title")],
+    ["sec-topics", t("topics.title")], ["sec-notes", t("noteTopics.spaceTitle")], ["sec-cards", t("cards.title")],
+    ["sec-goals", t("goals.title")], ["sec-quizzes", t("quizzes.title")],
   ];
 
   if (space.isPending) return <p className="text-muted" role="status">{t("common.loading")}</p>;
@@ -146,6 +146,9 @@ export function SpaceDetailPage() {
       ) : null}
       </div>
 
+      {/* Notes come right after topics: a Holberton project is a set of tasks, each with its own notes (HSLH-028). */}
+      <div id="sec-notes" className="scroll-mt-16"><SpaceNotes space={space.data} /></div>
+
       <div id="sec-cards" className="scroll-mt-16">
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -171,7 +174,6 @@ export function SpaceDetailPage() {
       </div>
 
       <div id="sec-goals" className="scroll-mt-16"><SpaceGoals spaceId={spaceId} /></div>
-      <div id="sec-notes" className="scroll-mt-16"><SpaceNotes spaceId={spaceId} topicName={(id) => [...space.data.topics, ...space.data.archivedTopics].find((x) => x.id === id)?.name} /></div>
       <div id="sec-quizzes" className="scroll-mt-16"><SpaceQuizzes spaceId={spaceId} /></div>
     </section>
   );
