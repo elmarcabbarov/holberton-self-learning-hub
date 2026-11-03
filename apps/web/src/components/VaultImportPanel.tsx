@@ -53,7 +53,7 @@ export function VaultImportPanel() {
 
   return (
     <section aria-labelledby="vault-import-title" className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
-      <h2 id="vault-import-title" className="text-[20px] font-medium">{t("vaultImport.title")}</h2>
+      <h2 id="vault-import-title" className="hub-display text-[22px]">{t("vaultImport.title")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("vaultImport.intro")}</p>
 
       {!current || current.state === "done" ? (
@@ -71,7 +71,7 @@ export function VaultImportPanel() {
               <form aria-label={t("vaultImport.folderForm")} onSubmit={(e) => submit(e, folder ? { kind: "folder", folder } : null)} className="flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[13px] text-muted">{t("vaultImport.folderLabel")}</span>
-                  <select value={folder} onChange={(e) => setFolder(e.target.value)} className="h-10 min-w-48 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
+                  <select value={folder} onChange={(e) => setFolder(e.target.value)} className="h-10 min-w-48 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px]">
                     <option value="">{t("vaultImport.chooseFolder")}</option>
                     {sources.data.folders.map((f) => <option key={f} value={f}>{f}</option>)}
                   </select>

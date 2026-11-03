@@ -5,7 +5,7 @@ import type { Goal } from "@hub/contracts";
 import { useAddTask, useCreateGoal, useDeleteTask, useGoals, useReorderTasks, useUpdateGoal, useUpdateTask } from "../features/goals.ts";
 import { Button, Card, ConfirmButton, TextInput } from "./ui.tsx";
 
-const textareaClass = "min-h-20 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg placeholder:text-muted";
+const textareaClass = "min-h-20 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-muted";
 
 /** Space → goals with checklist tasks (HSLH-007). Progress is "tasks completed", never mastery (D-063). */
 export function SpaceGoals({ spaceId }: { spaceId: string }) {
@@ -25,7 +25,7 @@ export function SpaceGoals({ spaceId }: { spaceId: string }) {
 
   return (
     <Card className="mt-6">
-      <h2 className="text-[20px] font-medium">{t("goals.title")}</h2>
+      <h2 className="hub-display text-[22px]">{t("goals.title")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("goals.intro")}</p>
       <form aria-label={t("goals.newGoal")} onSubmit={onCreate} className="mt-5 flex flex-col gap-3">
         <TextInput label={t("goals.goalTitle")} placeholder={t("goals.goalTitlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required />
@@ -151,7 +151,7 @@ function GoalItem({ goal }: { goal: Goal }) {
 
       <form onSubmit={onAdd} className="mt-3 flex gap-2">
         <input aria-label={t("goals.newTask", { name: goal.title })} placeholder={t("goals.newTaskPlaceholder")} value={task} onChange={(e) => setTask(e.target.value)} maxLength={500}
-          className="h-9 min-w-0 flex-1 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[14px] text-fg placeholder:text-muted" />
+          className="h-9 min-w-0 flex-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[14px] text-fg placeholder:text-muted" />
         <Button type="submit" className="h-9" disabled={addTask.isPending || !task.trim()}>{t("goals.addTask")}</Button>
       </form>
       {failed ? <p role="alert" className="mt-2 text-[13px]">{t("errors.saveFailed")}</p> : null}

@@ -69,9 +69,9 @@ function ReviewSession({ space }: { space: string | undefined }) {
 
       {!card ? (
         <Card className="mt-8">
-          <h2 className="text-[20px] font-medium">{done > 0 ? t("review.finishedTitle") : t("review.emptyTitle")}</h2>
+          <h2 className="hub-display text-[22px]">{done > 0 ? t("review.finishedTitle") : t("review.emptyTitle")}</h2>
           <p className="mt-2 text-muted">{done > 0 ? t("review.finishedBody", { count: done }) : t("review.emptyBody")}</p>
-          <Link to="/spaces" className="mt-6 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("review.addCards")}</Link>
+          <Link to="/spaces" className="mt-6 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg">{t("review.addCards")}</Link>
         </Card>
       ) : (
         <Card className="mt-8">

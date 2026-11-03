@@ -293,12 +293,6 @@ importers:
       '@codemirror/view':
         specifier: 6.43.15
         version: 6.43.15
-      '@fontsource-variable/inter-tight':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@fontsource-variable/jetbrains-mono':
-        specifier: 5.3.0
-        version: 5.3.0
       '@hub/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -968,12 +962,6 @@ packages:
 
   '@fastify/static@10.1.8':
     resolution: {integrity: sha512-3CbgWOXJX8f46xxsuOgQl9h0lyQQiABMG40kxRF5PWJk4LyBW5m3mLZoW5glnm2TUTC1gVFCBnqOt5S6zIIIrg==}
-
-  '@fontsource-variable/inter-tight@5.3.0':
-    resolution: {integrity: sha512-ZhZZ29sNZ15P1K+cUt13GeBRYON0akgmNiftshUeDLos7X7zGcRgPzt434879Xhq1QbwlW3M/apBMk7jWabwvA==}
-
-  '@fontsource-variable/jetbrains-mono@5.3.0':
-    resolution: {integrity: sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw==}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
@@ -3248,10 +3236,6 @@ snapshots:
       fastify-plugin: 6.0.1
       fastq: 1.20.3
       glob: 13.0.6
-
-  '@fontsource-variable/inter-tight@5.3.0': {}
-
-  '@fontsource-variable/jetbrains-mono@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 

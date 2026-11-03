@@ -30,7 +30,7 @@ function TopicRow({ topic, spaceId }: { topic: Topic; spaceId: string }) {
       <li className="flex flex-wrap items-center gap-2 py-2">
         <form onSubmit={save} className="flex flex-1 items-center gap-2">
           <input aria-label={t("topics.nameLabel")} value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus
-            className="h-9 flex-1 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-fg" />
+            className="h-9 flex-1 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-fg" />
           <Button type="submit" variant="ghost" aria-label={t("common.save")}><Check size={16} aria-hidden /></Button>
           <Button type="button" variant="ghost" aria-label={t("common.cancel")} onClick={() => { setName(topic.name); setEditing(false); }}><X size={16} aria-hidden /></Button>
         </form>
@@ -82,6 +82,11 @@ export function SpaceDetailPage() {
     addTopic.mutate(topicName, { onSuccess: () => { setTopicName(""); void space.refetch(); } });
   };
 
+  const sections: [string, string][] = [
+    ["sec-topics", t("topics.title")], ["sec-cards", t("cards.title")], ["sec-goals", t("goals.title")],
+    ["sec-notes", t("noteTopics.spaceTitle")], ["sec-quizzes", t("quizzes.title")],
+  ];
+
   if (space.isPending) return <p className="text-muted" role="status">{t("common.loading")}</p>;
   if (space.isError) return <p role="alert">{t("errors.loadFailed")}</p>;
 
@@ -98,10 +103,10 @@ export function SpaceDetailPage() {
       {updateSpace.isError ? <p role="alert" className="mt-3 text-[14px] text-fg">{t("errors.saveFailed")}</p> : null}
 
       <div className="mt-6 flex flex-wrap items-end gap-4">
-        <Link to="/spaces/$spaceId/tutor" params={{ spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-[14px] font-medium">{t("tutor.ask")}</Link>
+        <Link to="/spaces/$spaceId/tutor" params={{ spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-dark">{t("tutor.ask")}</Link>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="tutor-mode" className="text-[13px] text-muted">{t("tutor.mode")}</label>
-          <select id="tutor-mode" value={space.data.tutorMode ?? "project"} disabled={updateSpace.isPending} onChange={(e) => updateSpace.mutate({ tutorMode: e.target.value as "project" | "explain" })} aria-describedby="tutor-mode-note" className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3">
+          <select id="tutor-mode" value={space.data.tutorMode ?? "project"} disabled={updateSpace.isPending} onChange={(e) => updateSpace.mutate({ tutorMode: e.target.value as "project" | "explain" })} aria-describedby="tutor-mode-note" className="h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3">
             <option value="project">{t("tutor.modes.project")}</option>
             <option value="explain">{t("tutor.modes.explain")}</option>
           </select>
@@ -109,8 +114,17 @@ export function SpaceDetailPage() {
         <p id="tutor-mode-note" className="w-full text-[13px] text-muted">{t(`tutor.modeHelp.${space.data.tutorMode ?? "project"}`)}</p>
       </div>
 
-      <Card className="mt-8">
-        <h2 className="text-[20px] font-medium">{t("topics.title")}</h2>
+      <nav aria-label={t("spaces.sectionsNav")} className="sticky top-0 z-10 -mx-2 mt-8 border-b border-line bg-bg/95 px-2 py-2 backdrop-blur">
+        <ul className="flex gap-1 overflow-x-auto text-[14px]">
+          {sections.map(([id, label]) => (
+            <li key={id}><a href={`#${id}`} className="inline-flex h-9 items-center whitespace-nowrap rounded-[var(--radius-control)] px-3 font-medium text-muted transition-colors hover:bg-surface hover:text-fg">{label}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      <div id="sec-topics" className="scroll-mt-16">
+      <Card className="mt-6">
+        <h2 className="hub-display text-[22px]">{t("topics.title")}</h2>
         <p className="mt-1 text-[14px] text-muted">{t("topics.intro")}</p>
         <form onSubmit={onAdd} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
           <TextInput label={t("topics.nameLabel")} placeholder={t("topics.namePlaceholder")} value={topicName} onChange={(e) => setTopicName(e.target.value)} maxLength={120} className="flex-1" required />
@@ -130,10 +144,12 @@ export function SpaceDetailPage() {
           </ul>
         </details>
       ) : null}
+      </div>
 
+      <div id="sec-cards" className="scroll-mt-16">
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-[20px] font-medium">{t("cards.title")}</h2>
+          <h2 className="hub-display text-[22px]">{t("cards.title")}</h2>
           <div className="flex gap-4">
             <a href={`/api/cards/export/anki?spaceId=${spaceId}`} download className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("anki.downloadSpace")}</a>
             <Link to="/review" search={{ space: spaceId }} className="text-[14px] text-muted underline decoration-line underline-offset-4 hover:text-fg">{t("cards.startReview")}</Link>
@@ -152,10 +168,11 @@ export function SpaceDetailPage() {
           </ul>
         ) : null}
       </Card>
+      </div>
 
-      <SpaceGoals spaceId={spaceId} />
-      <SpaceNotes spaceId={spaceId} topicName={(id) => [...space.data.topics, ...space.data.archivedTopics].find((x) => x.id === id)?.name} />
-      <SpaceQuizzes spaceId={spaceId} />
+      <div id="sec-goals" className="scroll-mt-16"><SpaceGoals spaceId={spaceId} /></div>
+      <div id="sec-notes" className="scroll-mt-16"><SpaceNotes spaceId={spaceId} topicName={(id) => [...space.data.topics, ...space.data.archivedTopics].find((x) => x.id === id)?.name} /></div>
+      <div id="sec-quizzes" className="scroll-mt-16"><SpaceQuizzes spaceId={spaceId} /></div>
     </section>
   );
 }

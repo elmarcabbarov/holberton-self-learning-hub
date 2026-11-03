@@ -7,7 +7,7 @@ import { useSpaces } from "../features/spaces.ts";
 import { Button, Card, TextInput } from "./ui.tsx";
 
 const KEY = ["sessions", "overview"] as const;
-const textareaClass = "min-h-16 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg placeholder:text-muted";
+const textareaClass = "min-h-16 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-muted";
 
 /** Minutes since `iso`, refreshed every 30 s while shown. */
 function useMinutesSince(iso: string | null): number {
@@ -108,7 +108,7 @@ export function SessionCard() {
           {spaces.data && spaces.data.spaces.length > 0 ? (
             <label className="flex flex-col gap-1.5">
               <span className="text-[13px] text-muted">{t("sessions.space")}</span>
-              <select value={space} onChange={(e) => setSpaceId(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
+              <select value={space} onChange={(e) => setSpaceId(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px]">
                 <option value="">{t("sessions.noSpace")}</option>
                 {spaces.data.spaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>

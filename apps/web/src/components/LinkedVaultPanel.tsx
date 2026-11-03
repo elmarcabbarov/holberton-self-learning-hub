@@ -19,7 +19,7 @@ export function LinkedVaultPanel() {
   const needsConfirm = linked.state === "replaced" || linked.state === "empty_unconfirmed";
   return (
     <section aria-labelledby="linked-vault-title" className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
-      <h2 id="linked-vault-title" className="text-[20px] font-medium">{t("linkedVault.title")}</h2>
+      <h2 id="linked-vault-title" className="hub-display text-[22px]">{t("linkedVault.title")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("linkedVault.intro")}</p>
       <p role="status" className="mt-4 text-[14px]">{t(`linkedVault.state.${linked.state}`)} {t("linkedVault.notes", { count: linked.notes })}</p>
       {needsConfirm ? (

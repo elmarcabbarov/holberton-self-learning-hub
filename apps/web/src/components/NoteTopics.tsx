@@ -33,7 +33,7 @@ export function NoteTopics({ noteId }: { noteId: string }) {
       {options.length > 0 ? (
         <select aria-label={t("noteTopics.add")} value={pick} disabled={set.isPending || !linked.isSuccess}
           onChange={(e) => { const id = e.target.value; setPick(""); if (id) set.mutate([...ids, id]); }}
-          className="mt-2 h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-2 text-[14px]">
+          className="mt-2 h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface px-2 text-[14px]">
           <option value="">{t("noteTopics.add")}</option>
           {options.map((x) => <option key={x.id} value={x.id}>{x.spaceName} / {x.name}</option>)}
         </select>
@@ -49,7 +49,7 @@ export function SpaceNotes({ spaceId, topicName }: { spaceId: string; topicName:
   const notes = useSpaceNotes(spaceId);
   return (
     <Card className="mt-6">
-      <h2 className="text-[20px] font-medium">{t("noteTopics.spaceTitle")}</h2>
+      <h2 className="hub-display text-[22px]">{t("noteTopics.spaceTitle")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("noteTopics.spaceIntro")}</p>
       {notes.data && notes.data.notes.length > 0 ? (
         <ul className="mt-5 divide-y divide-line" aria-label={t("noteTopics.spaceListLabel")}>
