@@ -89,8 +89,11 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
 :focus-visible { outline: 2px solid var(--hub-focus); outline-offset: 2px; }
 
 /* Brand lockup: height drives the size; the inline SVG keeps its aspect ratio. */
-.hub-logo { display: inline-block; line-height: 0; }
-.hub-logo svg { height: 100%; width: auto; display: block; }
+/* In a layer so responsive utilities (`hidden md:inline-block`) still control visibility. */
+@layer components {
+  .hub-logo { display: inline-block; line-height: 0; }
+  .hub-logo svg { height: 100%; width: auto; display: block; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -105,7 +108,14 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
 /* Signature card (holbertonschool.az programs section): black with teal label in the light theme;
    in the dark theme a red top rule marks it instead. */
 .hub-feature { position: relative; }
-:root:not([data-theme="dark"]) .hub-feature { background: #000000; border-color: #000000; color: #f0f0f5; }
+/* The black card carries the dark-theme tokens locally, so muted text, focus rings and links keep their contrast. */
+:root:not([data-theme="dark"]) .hub-feature {
+  background: #000000; border-color: #000000; color: #f0f0f5;
+  --hub-fg: #f0f0f5; --hub-muted: #b4b4bc; --hub-focus: #ff4f7b; --hub-accent-text: #ff4f7b; --hub-teal: #78cdd2;
+  --hub-surface: #141414; --hub-surface-2: #1f1f22; --hub-line: #2f2f34; --hub-bg: #000000;
+  --color-fg: var(--hub-fg); --color-muted: var(--hub-muted); --color-focus: var(--hub-focus); --color-accent-text: var(--hub-accent-text);
+  --color-teal: var(--hub-teal); --color-surface: var(--hub-surface); --color-surface-2: var(--hub-surface-2); --color-line: var(--hub-line); --color-bg: var(--hub-bg);
+}
 :root:not([data-theme="dark"]) .hub-feature .hub-feature-label { color: #78cdd2; }
 :root[data-theme="dark"] .hub-feature { border-top: 3px solid var(--color-brand); }
 @media (prefers-color-scheme: dark) {
