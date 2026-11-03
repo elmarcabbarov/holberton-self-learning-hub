@@ -10,6 +10,8 @@ services:
       HUB_PUBLIC_PORT: ${HUB_PORT:-3000}
       # HUB_IMPORT_DIR: /import
       # HUB_LINKED_VAULT: /linked
+      # Encrypts AI keys at rest (ADR-008). Keep it outside the data folder, e.g. in .env.
+      # HUB_SECRET_KEY: ${HUB_SECRET_KEY}
     volumes:
       - ${HUB_DATA:-./.data}:/data
       # Optional read-only linked vault (D-062). Uncomment this line and HUB_LINKED_VAULT above, and set LINKED_VAULT in .env.
@@ -18,6 +20,9 @@ services:
       # Optional import folder (D-061): its subfolders can be copied into the vault from Settings.
       # Uncomment both lines and set IMPORT_DIR in .env.
       # - ${IMPORT_DIR}:/import:ro
+    # Lets the container reach Ollama on the host as http://host.docker.internal:11434/v1 (Linux needs this line).
+    # Ollama must listen on an address the container can reach (OLLAMA_HOST), not only 127.0.0.1.
+    extra_hosts: ["host.docker.internal:host-gateway"]
     user: "${UID:-1000}:${GID:-1000}"
     read_only: true
     tmpfs: [/tmp]

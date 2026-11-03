@@ -5,6 +5,7 @@ import { applyTheme, getTheme, type Theme } from "../theme.ts";
 import { BackupPanel } from "../components/BackupPanel.tsx";
 import { VaultImportPanel } from "../components/VaultImportPanel.tsx";
 import { LinkedVaultPanel } from "../components/LinkedVaultPanel.tsx";
+import { AIPanel } from "../components/AIPanel.tsx";
 
 const LANG_LABEL: Record<Language, string> = { en: "English", az: "Azərbaycan" };
 
@@ -53,6 +54,7 @@ export function Settings() {
       <BackupPanel />
       <VaultImportPanel />
       <LinkedVaultPanel />
+      <AIPanel />
       <div className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
         <h2 className="text-[20px] font-medium">{t("anki.title")}</h2>
         <p className="mt-1 max-w-prose text-[14px] text-muted">{t("anki.intro")}</p>

@@ -246,3 +246,18 @@ export const studySessions = sqliteTable("study_sessions", {
   next: text("next"),
   reflectedAt: text("reflected_at"),
 }, (t) => [index("study_sessions_started_idx").on(t.startedAt)]);
+
+/** AI settings (HSLH-014, D-065): one row, no secrets (the key lives in data/secrets.json, ADR-008). */
+export const aiSettings = sqliteTable("ai_settings", {
+  id: integer("id").primaryKey(), // always 1
+  mode: text("mode").notNull().default("disabled"), // disabled | openai_compatible | anthropic | mock
+  baseUrl: text("base_url").notNull().default(""),
+  model: text("model").notNull().default(""),
+  maxOutputTokens: integer("max_output_tokens").notNull().default(1024),
+  revision: integer("revision").notNull().default(0),
+  /** Endpoint the stored key belongs to (`mode|baseUrl`); a different endpoint never receives it. */
+  keyBinding: text("key_binding"),
+  probesJson: text("probes_json"),
+  probedRevision: integer("probed_revision"),
+  probedAt: text("probed_at"),
+});

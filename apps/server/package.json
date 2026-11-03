@@ -13,9 +13,12 @@
     "token:dev": "HUB_DEV=1 node src/cli.ts token"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.83",
+    "@ai-sdk/openai-compatible": "3.0.73",
     "@fastify/cookie": "11.1.5",
     "@fastify/static": "10.1.8",
     "@hub/contracts": "workspace:*",
+    "ai": "7.0.145",
     "better-sqlite3": "13.0.3",
     "chokidar": "5.0.0",
     "drizzle-orm": "0.45.4",

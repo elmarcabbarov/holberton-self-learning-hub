@@ -26,6 +26,10 @@ export interface HubConfig {
   importDir: string | null;
   /** Existing vault indexed read-only (HUB_LINKED_VAULT, D-062). */
   linkedVault: string | null;
+  /** Encrypts BYOK secrets at rest when set (HUB_SECRET_KEY, ADR-008). */
+  secretKey: string | undefined;
+  /** Allows the deterministic mock AI provider (tests only). */
+  aiMock: boolean;
 }
 
 function parseMode(raw: string | undefined): HubMode {
@@ -72,6 +76,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HubConfig {
     vaultPolling: env.HUB_VAULT_POLL === "1",
     importDir: env.HUB_IMPORT_DIR ? resolve(env.HUB_IMPORT_DIR) : null,
     linkedVault: env.HUB_LINKED_VAULT ? resolve(env.HUB_LINKED_VAULT) : null,
+    secretKey: env.HUB_SECRET_KEY || undefined,
+    aiMock: env.HUB_AI_MOCK === "1",
     bindHost,
     // Default is the repository root's .data, independent of the working directory.
     dataDir: env.HUB_DATA ? resolve(env.HUB_DATA) : fileURLToPath(new URL("../../../.data", import.meta.url)),
