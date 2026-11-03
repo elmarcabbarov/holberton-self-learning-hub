@@ -23,7 +23,7 @@ export function ExamModePanel() {
   return (
     <Card className="mt-6">
       <section aria-labelledby="exam-title">
-        <h2 id="exam-title" className="text-[20px] font-medium">{t("exam.title")}</h2>
+        <h2 id="exam-title" className="hub-display text-[22px]">{t("exam.title")}</h2>
         <p className="mt-1 text-[14px] text-muted">{t("exam.intro")}</p>
         {exam.data?.until ? (
           <div className="mt-4">

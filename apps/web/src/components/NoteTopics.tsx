@@ -36,7 +36,7 @@ export function NoteTopics({ noteId }: { noteId: string }) {
       {options.length > 0 ? (
         <select aria-label={t("noteTopics.add")} value={pick} disabled={set.isPending || !linked.isSuccess}
           onChange={(e) => { const id = e.target.value; setPick(""); if (id) set.mutate([...ids, id]); }}
-          className="mt-2 h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-2 text-[14px]">
+          className="mt-2 h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface px-2 text-[14px]">
           <option value="">{t("noteTopics.add")}</option>
           {options.map((x) => <option key={x.id} value={x.id}>{x.spaceName} / {x.name}</option>)}
         </select>
@@ -101,7 +101,7 @@ export function SpaceNotes({ space }: { space: Space }) {
   const errorKey = (e: unknown) => (e instanceof ApiError && e.messageKey.startsWith("noteSpaces.") ? e.messageKey : "errors.saveFailed");
   return (
     <Card className="mt-6">
-      <h2 className="text-[20px] font-medium">{t("noteTopics.spaceTitle")}</h2>
+      <h2 className="hub-display text-[22px]">{t("noteTopics.spaceTitle")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("noteTopics.spaceIntro")}</p>
       {!space.archivedAt ? (
         <form aria-label={t("noteSpaces.new")} onSubmit={submit} className="mt-5 flex flex-wrap items-end gap-3">
@@ -109,7 +109,7 @@ export function SpaceNotes({ space }: { space: Space }) {
           {space.topics.length > 0 ? (
             <div className="flex flex-col gap-1.5">
               <label htmlFor="space-note-topic" className="text-[13px] text-muted">{t("noteSpaces.newTopic")}</label>
-              <select id="space-note-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
+              <select id="space-note-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px]">
                 <option value="">{t("noteSpaces.noTopic")}</option>
                 {space.topics.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select>

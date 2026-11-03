@@ -80,5 +80,5 @@ export function MarkdownEditor({ value, docKey, readOnly, label, placeholder, on
     // A new docKey (or read-only change) creates a fresh state: no undo history across reloads.
   }, [docKey, readOnly]);
 
-  return <div ref={host} className="min-h-[420px] rounded-[var(--radius-card)] border border-line bg-surface-2" data-testid="markdown-editor" />;
+  return <div ref={host} className="min-h-[420px] rounded-[var(--radius-card)] border border-line bg-surface" data-testid="markdown-editor" />;
 }

@@ -5,7 +5,7 @@ import { MAX_OPTIONS, type Question, type QuestionType } from "@hub/contracts";
 import { useSaveQuestion } from "../features/quizzes.ts";
 import { Button } from "./ui.tsx";
 
-const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg placeholder:text-muted";
+const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-muted";
 
 /** Create or edit one question. Choice questions mark correct options inline; short answers take a reference. */
 export function QuestionForm({ quizId, question, onDone }: { quizId: string; question?: Question; onDone?: () => void }) {

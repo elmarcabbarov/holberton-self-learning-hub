@@ -5,7 +5,7 @@ import { useSpace } from "../features/spaces.ts";
 import { useArchivedQuizzes, useCreateQuiz, useSpaceQuizzes } from "../features/quizzes.ts";
 import { Button, Card, TextInput } from "./ui.tsx";
 
-const field = "h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px] text-fg";
+const field = "h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px] text-fg";
 
 /** Quizzes of a space. A quiz belongs to a topic so it shows up here (a quiz without a topic lives only under its own link). */
 export function SpaceQuizzes({ spaceId }: { spaceId: string }) {
@@ -29,7 +29,7 @@ export function SpaceQuizzes({ spaceId }: { spaceId: string }) {
 
   return (
     <Card className="mt-6">
-      <h2 className="text-[20px] font-medium">{t("quizzes.title")}</h2>
+      <h2 className="hub-display text-[22px]">{t("quizzes.title")}</h2>
       <p className="mt-1 text-[14px] text-muted">{t("quizzes.intro")}</p>
       {topics.length === 0 ? <p className="mt-4 text-[14px] text-muted">{t("quizzes.needTopic")}</p> : (
         <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" aria-label={t("quizzes.newQuiz")}>

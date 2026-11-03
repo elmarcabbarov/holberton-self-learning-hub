@@ -18,7 +18,7 @@ export function BackupPanel() {
 
   return (
     <section aria-labelledby="data-title" className="mt-8 rounded-[var(--radius-card)] border border-line bg-surface p-8">
-      <h2 id="data-title" className="text-[20px] font-medium">{t("backup.title")}</h2>
+      <h2 id="data-title" className="hub-display text-[22px]">{t("backup.title")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("backup.intro")}</p>
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button variant="primary" onClick={() => create.mutate()} disabled={create.isPending}>

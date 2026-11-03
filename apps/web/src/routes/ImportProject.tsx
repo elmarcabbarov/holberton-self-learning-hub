@@ -51,14 +51,14 @@ export function ImportProject() {
       <section aria-labelledby="import-title">
         <PageTitle id="import-title">{t("import.title")}</PageTitle>
         <Card className="mt-8">
-          <h2 className="text-[20px] font-medium" role="status">{t("import.done", { cards: run.data.cards, topics: run.data.topics })}</h2>
+          <h2 className="hub-display text-[22px]" role="status">{t("import.done", { cards: run.data.cards, topics: run.data.topics })}</h2>
           {run.data.noteSkipped ? <p role="alert" className="mt-3 text-[14px]">{t("import.noteSkipped")}</p> : null}
           {run.data.taskNotes > 0 ? <p className="mt-3 text-[14px] text-muted">{t("import.taskNotesDone", { count: run.data.taskNotes })}</p> : null}
           {run.data.taskNotesSkipped > 0 ? <p role="alert" className="mt-3 text-[14px]">{t("import.taskNotesSkipped", { count: run.data.taskNotesSkipped })}</p> : null}
           {parsed && withTaskNotes && omittedTaskNotes(parsed) > 0 ? <p role="alert" className="mt-3 text-[14px]">{t("import.taskNotesOverLimit", { count: omittedTaskNotes(parsed) })}</p> : null}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/spaces/$spaceId" params={{ spaceId: run.data.spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-medium text-white hover:bg-brand-dark">{t("import.openSpace")}</Link>
-            {run.data.noteId ? <Link to="/notes/$noteId" params={{ noteId: run.data.noteId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("import.openNote")}</Link> : null}
+            <Link to="/spaces/$spaceId" params={{ spaceId: run.data.spaceId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-dark">{t("import.openSpace")}</Link>
+            {run.data.noteId ? <Link to="/notes/$noteId" params={{ noteId: run.data.noteId }} className="inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg">{t("import.openNote")}</Link> : null}
           </div>
         </Card>
       </section>
@@ -77,7 +77,7 @@ export function ImportProject() {
         <label className="mt-5 flex flex-col gap-1.5">
           <span className="text-[13px] text-muted">{t("import.pasteLabel")}</span>
           <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={8} maxLength={500_000}
-            className="rounded-[var(--radius-control)] border border-line bg-surface-2 p-3 font-mono text-[13px] text-fg" />
+            className="rounded-[var(--radius-control)] border border-line bg-surface p-3 font-mono text-[13px] text-fg" />
         </label>
         <Button className="mt-4" variant={parsed ? "secondary" : "primary"} onClick={read} disabled={!raw.trim()}>{t("import.read")}</Button>
       </Card>
@@ -87,7 +87,7 @@ export function ImportProject() {
           <p role="alert" className="mt-6">{t("import.nothingFound")}</p>
         ) : (
           <Card className="mt-6">
-            <h2 className="text-[20px] font-medium">{t("import.preview")}</h2>
+            <h2 className="hub-display text-[22px]">{t("import.preview")}</h2>
             <TextInput className="mt-5" label={t("import.spaceName")} value={spaceName} onChange={(e) => setSpaceName(e.target.value)} maxLength={120} required />
 
             <fieldset className="mt-6">

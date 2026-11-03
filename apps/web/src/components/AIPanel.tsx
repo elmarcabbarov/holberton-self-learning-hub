@@ -65,12 +65,12 @@ export function AIPanel() {
 
   return (
     <section aria-labelledby="ai-title" className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
-      <h2 id="ai-title" className="text-[20px] font-medium">{t("ai.title")}</h2>
+      <h2 id="ai-title" className="hub-display text-[22px]">{t("ai.title")}</h2>
       <p className="mt-1 max-w-prose text-[14px] text-muted">{t("ai.intro")}</p>
       <form aria-label={t("ai.form")} onSubmit={submit} className="mt-5 flex max-w-xl flex-col gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-[13px] text-muted">{t("ai.mode")}</span>
-          <select value={mode} onChange={(e) => setMode(e.target.value as AIMode)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[15px]">
+          <select value={mode} onChange={(e) => setMode(e.target.value as AIMode)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[15px]">
             <option value="disabled">{t("ai.modes.disabled")}</option>
             <option value="openai_compatible">{t("ai.modes.openai_compatible")}</option>
             <option value="anthropic">{t("ai.modes.anthropic")}</option>

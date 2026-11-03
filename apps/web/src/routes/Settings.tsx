@@ -58,9 +58,9 @@ export function Settings() {
       <AIPanel />
       <ExamModePanel />
       <div className="mt-6 rounded-[var(--radius-card)] border border-line bg-surface p-8">
-        <h2 className="text-[20px] font-medium">{t("anki.title")}</h2>
+        <h2 className="hub-display text-[22px]">{t("anki.title")}</h2>
         <p className="mt-1 max-w-prose text-[14px] text-muted">{t("anki.intro")}</p>
-        <a href="/api/cards/export/anki" download className="mt-5 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-4 text-[14px] font-medium hover:bg-surface">{t("anki.download")}</a>
+        <a href="/api/cards/export/anki" download className="mt-5 inline-flex h-10 items-center rounded-[var(--radius-control)] border border-fg/80 bg-surface px-4 text-[14px] font-semibold transition-colors hover:bg-fg hover:text-bg">{t("anki.download")}</a>
       </div>
     </section>
   );

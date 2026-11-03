@@ -9,7 +9,7 @@ import { useSpace } from "../features/spaces.ts";
 import { useExamMode } from "../features/examMode.ts";
 import { sendTutorMessage } from "../features/tutorStream.ts";
 
-const textareaClass = "min-h-20 w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg";
+const textareaClass = "min-h-20 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg";
 const threadsKey = ["tutor", "threads"] as const;
 const detailKey = (id: string) => ["tutor", "thread", id] as const;
 type Start = Extract<TutorEvent, { event: "start" }>["data"];
@@ -91,11 +91,11 @@ function NewThread({ spaceId, topicId, onCreated }: { spaceId: string; topicId?:
   const errorText = useTutorError();
   return (
     <form aria-label={t("tutor.new")} className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); create.mutate(false); }}>
-      <h2 className="text-[20px] font-medium">{t("tutor.framework")}</h2>
+      <h2 className="hub-display text-[22px]">{t("tutor.framework")}</h2>
       <p className="text-[14px] text-muted">{t("tutor.frameworkIntro")}</p>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="tutor-topic" className="text-[13px] text-muted">{t("tutor.topic")}</label>
-        <select id="tutor-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3">
+        <select id="tutor-topic" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-[var(--radius-control)] border border-line bg-surface px-3">
           <option value="">{t("tutor.general")}</option>
           {space.data?.topics.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
         </select>
@@ -199,7 +199,7 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
   return (
     <section aria-label={t("tutor.conversation")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 ref={heading} tabIndex={-1} className="text-[20px] font-medium">{t("tutor.conversation")}</h2>
+        <h2 ref={heading} tabIndex={-1} className="hub-display text-[22px]">{t("tutor.conversation")}</h2>
         <Button disabled={send.isPending || otherStream || archive.isPending} onClick={() => archive.mutate()}>{t(thread.data.archivedAt ? "archive.restore" : "tutor.archive")}</Button>
       </div>
       {archive.isError ? <p role="alert">{errorText(archive.error)}</p> : null}

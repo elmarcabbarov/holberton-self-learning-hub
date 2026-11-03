@@ -1,15 +1,20 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter-tight";
-@import "@fontsource-variable/jetbrains-mono";
+@import "./assets/brand-fonts/fonts.css";
 
-/* Tokens follow the Holberton intranet palette (docs/INTRANET_FINDINGS.md §4). */
+/*
+ * Holberton School Azerbaijan visual language (D-069, same system as Holberton Quiz): paper and white
+ * surfaces with signature red, the black "programs" section with teal for the dark theme, Host Grotesk
+ * for UI, Fraunces for titles and big numbers, JetBrains Mono for code (all SIL OFL, self-hosted).
+ * White on #E1003C is 4.96:1 (AA at any size); red *text* on light surfaces uses the deeper #AE002E.
+ */
 @theme {
-  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-sans: "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --color-brand: #e0003c;
-  --color-brand-dark: #b70031;
-  --color-brand-darker: #a3002c;
+  --color-brand: #e1003c;
+  --color-brand-dark: #ae002e;
+  --color-brand-darker: #8f0026;
 
   --color-bg: var(--hub-bg);
   --color-surface: var(--hub-surface);
@@ -18,44 +23,54 @@
   --color-fg: var(--hub-fg);
   --color-muted: var(--hub-muted);
   --color-focus: var(--hub-focus);
+  --color-accent-text: var(--hub-accent-text);
+  --color-teal: var(--hub-teal);
 
-  --radius-card: 20px;
-  --radius-control: 4px;
+  --radius-card: 12px;
+  --radius-control: 8px;
 }
 
+/* Light: holbertonschool.az hero — paper background, white cards, ink text, red accents. */
 :root,
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --hub-bg: #1c2128;
-  --hub-surface: #31363c;
-  --hub-surface-2: #262b31;
-  --hub-line: #474c52;
-  --hub-fg: #f5f6fb;
-  --hub-muted: #98a3ae;
-  --hub-focus: #ff6b8f;
-}
-
 :root[data-theme="light"] {
   color-scheme: light;
   --hub-bg: #f0f0f5;
   --hub-surface: #ffffff;
-  --hub-surface-2: #e6e6ee;
-  --hub-line: #d4d4de;
+  --hub-surface-2: #e9e9ef;
+  --hub-line: #d9d9e0;
   --hub-fg: #1a1718;
-  --hub-muted: #5c5a63;
-  --hub-focus: #b70031;
+  --hub-muted: #5e5e66;
+  --hub-focus: #ae002e;
+  --hub-accent-text: #ae002e;
+  --hub-teal: #1f6e74;
 }
 
-@media (prefers-color-scheme: light) {
+/* Dark: the site's black programs section — black, red headings, teal text. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --hub-bg: #000000;
+  --hub-surface: #141414;
+  --hub-surface-2: #1f1f22;
+  --hub-line: #2f2f34;
+  --hub-fg: #f0f0f5;
+  --hub-muted: #b4b4bc;
+  --hub-focus: #ff4f7b;
+  --hub-accent-text: #ff4f7b;
+  --hub-teal: #78cdd2;
+}
+
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    color-scheme: light;
-    --hub-bg: #f0f0f5;
-    --hub-surface: #ffffff;
-    --hub-surface-2: #e6e6ee;
-    --hub-line: #d4d4de;
-    --hub-fg: #1a1718;
-    --hub-muted: #5c5a63;
-    --hub-focus: #b70031;
+    color-scheme: dark;
+    --hub-bg: #000000;
+    --hub-surface: #141414;
+    --hub-surface-2: #1f1f22;
+    --hub-line: #2f2f34;
+    --hub-fg: #f0f0f5;
+    --hub-muted: #b4b4bc;
+    --hub-focus: #ff4f7b;
+    --hub-accent-text: #ff4f7b;
+    --hub-teal: #78cdd2;
   }
 }
 
@@ -69,9 +84,41 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+code, pre, kbd, samp { font-family: var(--font-mono); }
 
 :focus-visible { outline: 2px solid var(--hub-focus); outline-offset: 2px; }
 
+/* Brand lockup: height drives the size; the inline SVG keeps its aspect ratio. */
+/* In a layer so responsive utilities (`hidden md:inline-block`) still control visibility. */
+@layer components {
+  .hub-logo { display: inline-block; line-height: 0; }
+  .hub-logo svg { height: 100%; width: auto; display: block; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Page titles and big numbers in Fraunces (the serif that echoes the Holberton wordmark). */
+@layer base {
+  h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; }
+}
+.hub-display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; }
+
+/* Signature card (holbertonschool.az programs section): black with teal label in the light theme;
+   in the dark theme a red top rule marks it instead. */
+.hub-feature { position: relative; }
+/* The black card carries the dark-theme tokens locally, so muted text, focus rings and links keep their contrast. */
+:root:not([data-theme="dark"]) .hub-feature {
+  background: #000000; border-color: #000000; color: #f0f0f5;
+  --hub-fg: #f0f0f5; --hub-muted: #b4b4bc; --hub-focus: #ff4f7b; --hub-accent-text: #ff4f7b; --hub-teal: #78cdd2;
+  --hub-surface: #141414; --hub-surface-2: #1f1f22; --hub-line: #2f2f34; --hub-bg: #000000;
+  --color-fg: var(--hub-fg); --color-muted: var(--hub-muted); --color-focus: var(--hub-focus); --color-accent-text: var(--hub-accent-text);
+  --color-teal: var(--hub-teal); --color-surface: var(--hub-surface); --color-surface-2: var(--hub-surface-2); --color-line: var(--hub-line); --color-bg: var(--hub-bg);
+}
+:root:not([data-theme="dark"]) .hub-feature .hub-feature-label { color: #78cdd2; }
+:root[data-theme="dark"] .hub-feature { border-top: 3px solid var(--color-brand); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .hub-feature { background: var(--hub-surface); border-color: var(--hub-line); color: var(--hub-fg); border-top: 3px solid var(--color-brand); }
+  :root:not([data-theme]) .hub-feature .hub-feature-label { color: var(--hub-teal); }
 }

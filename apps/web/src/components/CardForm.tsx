@@ -4,7 +4,7 @@ import { useCreateCard } from "../features/cards.ts";
 import { useSpace, useSpaces } from "../features/spaces.ts";
 import { Button } from "./ui.tsx";
 
-const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-fg placeholder:text-muted";
+const field = "w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-muted";
 
 function TopicPicker({ spaceId, value, onChange }: { spaceId: string; value: string; onChange(v: string): void }) {
   const { t } = useTranslation();

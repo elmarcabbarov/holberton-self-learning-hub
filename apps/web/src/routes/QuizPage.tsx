@@ -41,7 +41,7 @@ function StartForm({ quizId, disabled }: { quizId: string; disabled: boolean }) 
     e.preventDefault();
     start.mutate({ mode, confidencePre: confidence }, { onSuccess: (a) => void navigate({ to: "/attempts/$attemptId", params: { attemptId: a.id } }) });
   };
-  const choice = "flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 py-2.5 has-[:checked]:border-fg";
+  const choice = "flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2.5 hover:border-fg/60 has-[:checked]:border-fg has-[:checked]:shadow-[inset_3px_0_0_var(--color-brand)]";
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
@@ -139,7 +139,7 @@ export function QuizPage() {
       )}
 
       <Card className="mt-6">
-        <h2 className="text-[20px] font-medium">{t("quizzes.questions", { count: q.questions.length })}</h2>
+        <h2 className="hub-display text-[22px]">{t("quizzes.questions", { count: q.questions.length })}</h2>
         {q.questions.length > 0
           ? <ol className="mt-4 divide-y divide-line" aria-label={t("quizzes.questionsLabel")}>{q.questions.map((qq, i) => <QuestionRow key={qq.id} quizId={quizId} question={qq} n={i + 1} />)}</ol>
           : <p className="mt-2 text-muted">{t("quizzes.noQuestions")}</p>}
@@ -152,7 +152,7 @@ export function QuizPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-[20px] font-medium">{t("quizzes.history")}</h2>
+        <h2 className="hub-display text-[22px]">{t("quizzes.history")}</h2>
         <History quizId={quizId} />
       </Card>
     </section>
