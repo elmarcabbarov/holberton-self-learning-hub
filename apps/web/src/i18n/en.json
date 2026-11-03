@@ -545,5 +545,11 @@
       "mode": "That provider is not available."
     },
     "notReadyError": "Finish the AI settings first."
+  },
+  "tutor": {
+    "examMode": "AI is paused during exam mode. You can end exam mode early.",
+    "conflict": "This thread or request cannot be changed right now.",
+    "busy": "A response is already being generated in this thread.",
+    "hintsRequired": "Complete three hints before drafting a question for a peer."
   }
 }

@@ -1,5 +1,6 @@
 import { APICallError, generateObject, generateText, NoObjectGeneratedError, streamText, tool, type LanguageModel } from "ai";
 import { z } from "zod";
+import { setTimeout } from "node:timers/promises";
 import { EndpointError } from "./net.ts";
 
 /** Our thin AI interface (ARCHITECTURE §3.2). Domain code sees only this; SDK objects never leave this module. */
@@ -164,13 +165,27 @@ export class SdkProvider implements AIProvider {
 }
 
 /** Deterministic provider for tests of AI features (ARCHITECTURE §3.2). Never calls a network. */
+export interface MockTextScript { deltas: string[]; delayMs?: number; error?: AIErrorCode }
+
 export class MockProvider implements AIProvider {
   readonly id = "mock";
   private readonly objects: unknown[];
-  constructor(objects: unknown[] = []) { this.objects = [...objects]; }
+  script: MockTextScript | undefined;
+  lastRequest: TextRequest | undefined;
+  readonly requests: TextRequest[] = [];
+  constructor(objects: unknown[] = [], script?: MockTextScript) { this.objects = [...objects]; this.script = script; }
 
-  async *generateText(req: TextRequest): AsyncIterable<TextEvent> {
-    for (const word of `mock: ${req.prompt.slice(0, 60)}`.split(/(?<= )/)) yield { type: "delta", text: word };
+  async *generateText(req: TextRequest, signal: AbortSignal): AsyncIterable<TextEvent> {
+    this.lastRequest = { ...req };
+    this.requests.push(this.lastRequest);
+    const script = this.script;
+    for (const text of script?.deltas ?? `mock: ${req.prompt.slice(0, 60)}`.split(/(?<= )/)) {
+      signal.throwIfAborted();
+      if (script?.delayMs) await setTimeout(script.delayMs, undefined, { signal });
+      yield { type: "delta", text };
+    }
+    signal.throwIfAborted();
+    if (script?.error) { yield { type: "error", code: script.error }; return; }
     yield { type: "done", usage: { inputTokens: null, outputTokens: null } };
   }
 

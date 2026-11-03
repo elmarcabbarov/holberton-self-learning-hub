@@ -37,7 +37,7 @@ export function getSpace(db: Db, id: string) {
 
 export function createSpace(db: Db, input: CreateSpace) {
   const ts = now();
-  const row: SpaceRow = { id: randomUUID(), name: input.name, description: input.description, createdAt: ts, updatedAt: ts, archivedAt: null };
+  const row: SpaceRow = { id: randomUUID(), name: input.name, description: input.description, createdAt: ts, updatedAt: ts, archivedAt: null, tutorMode: "explain" };
   db.insert(spaces).values(row).run();
   return toSpace(db, row);
 }
@@ -46,6 +46,7 @@ export function updateSpace(db: Db, id: string, input: UpdateSpace) {
   const existing = db.select().from(spaces).where(eq(spaces.id, id)).get();
   if (!existing) return undefined;
   const patch: Partial<SpaceRow> = { updatedAt: now() };
+  if (input.tutorMode !== undefined) patch.tutorMode = input.tutorMode;
   if (input.name !== undefined) patch.name = input.name;
   if (input.description !== undefined) patch.description = input.description;
   if (input.archived !== undefined) patch.archivedAt = input.archived ? (existing.archivedAt ?? now()) : null;

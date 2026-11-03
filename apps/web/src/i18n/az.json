@@ -545,5 +545,11 @@
       "mode": "Bu provayder mövcud deyil."
     },
     "notReadyError": "Əvvəlcə AI ayarlarını tamamla."
+  },
+  "tutor": {
+    "examMode": "İmtahan rejimində süni intellekt dayandırılıb. İmtahan rejimini vaxtından əvvəl bitirə bilərsiniz.",
+    "conflict": "Bu söhbəti və ya sorğunu hazırda dəyişmək mümkün deyil.",
+    "busy": "Bu söhbətdə artıq cavab hazırlanır.",
+    "hintsRequired": "Yoldaşınıza sual hazırlamazdan əvvəl üç məsləhətin tamamlanmasını gözləyin."
   }
 }

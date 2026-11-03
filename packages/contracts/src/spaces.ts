@@ -17,7 +17,10 @@ export const Topic = z.object({
 });
 export type Topic = z.infer<typeof Topic>;
 
+export const TutorMode = z.enum(["project", "explain"]);
+
 export const Space = z.object({
+  tutorMode: TutorMode.nullable(),
   id: Id,
   name: Name,
   description: z.string(),
@@ -38,6 +41,7 @@ export const CreateSpace = z.object({ name: Name, description: Description.defau
 export type CreateSpace = z.infer<typeof CreateSpace>;
 
 export const UpdateSpace = z.object({
+  tutorMode: TutorMode.nullable().optional(),
   name: Name.optional(),
   description: Description.optional(),
   archived: z.boolean().optional(),
