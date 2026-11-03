@@ -35,6 +35,21 @@ describe("POST /api/import/project", () => {
     expect(r.notePath).toBe("Holberton/Pipes (2).md");
   });
 
+  it("points task-note links at the project note's real path when its name was taken (Codex review)", async () => {
+    const body = {
+      ...payload({ path: "Holberton/Pipes/Pipes.md", content: "# Pipes\n" }),
+      taskNotes: [{ path: "Holberton/Pipes/0. First.md", content: "# 0. First\n\nProject: [[Holberton/Pipes/Pipes]]\n" }],
+    };
+    const first = ImportProjectResult.parse((await t.req({ method: "POST", url: "/api/import/project", payload: body })).json());
+    const second = ImportProjectResult.parse((await t.req({ method: "POST", url: "/api/import/project", payload: body })).json());
+    expect(second.notePath).toBe("Holberton/Pipes/Pipes (2).md");
+    const task = (await t.req({ method: "GET", url: `/api/spaces/${second.spaceId}/notes` })).json().notes.find((n: { path: string }) => n.path.includes("First"));
+    expect(NoteDetail.parse((await t.req({ method: "GET", url: `/api/notes/${task.id}` })).json()).content).toContain("[[Holberton/Pipes/Pipes (2)]]");
+    const back = (id: string) => t.req({ method: "GET", url: `/api/notes/${id}/backlinks` }).then((r) => r.json().links.map((l: { id: string }) => l.id));
+    expect(await back(second.noteId!)).toContain(task.id);
+    expect(await back(first.noteId!)).not.toContain(task.id);
+  });
+
   it("works without a note and rejects invalid input before creating anything", async () => {
     const r = ImportProjectResult.parse((await t.req({ method: "POST", url: "/api/import/project", payload: payload(null) })).json());
     expect(r.noteId).toBeNull();

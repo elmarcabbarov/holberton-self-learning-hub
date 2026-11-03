@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Limits for goals (D-063). */
-export const GOAL_LIMITS = { goalsPerSpace: 200, tasksPerGoal: 100, topicsPerNote: 20 } as const;
+export const GOAL_LIMITS = { goalsPerSpace: 200, tasksPerGoal: 100, topicsPerNote: 20, spacesPerNote: 20 } as const;
 
 const Id = z.string().uuid();
 const Title = z.string().trim().min(1).max(200);
@@ -51,7 +51,19 @@ export type TopicRefList = z.infer<typeof TopicRefList>;
 export const SetNoteTopics = z.object({ topicIds: z.array(Id).max(GOAL_LIMITS.topicsPerNote) });
 export type SetNoteTopics = z.infer<typeof SetNoteTopics>;
 
-/** Notes linked to a space's topics. */
-export const SpaceNote = z.object({ id: Id, title: z.string(), path: z.string(), vault: z.enum(["hub", "linked"]), topicIds: z.array(Id) });
+/** Spaces a note is linked to directly (HSLH-028). */
+export const SpaceRef = z.object({ id: Id, name: z.string() });
+export const SpaceRefList = z.object({ spaces: z.array(SpaceRef) });
+export type SpaceRefList = z.infer<typeof SpaceRefList>;
+export const SetNoteSpaces = z.object({ spaceIds: z.array(Id).max(GOAL_LIMITS.spacesPerNote) });
+export type SetNoteSpaces = z.infer<typeof SetNoteSpaces>;
+
+/** A new note created from a space: placed in the space's folder and linked to it (and to a topic, if given). */
+export const CreateSpaceNote = z.object({ title: z.string().trim().min(1).max(120), topicId: Id.optional() });
+export type CreateSpaceNote = z.infer<typeof CreateSpaceNote>;
+export const CreatedSpaceNote = z.object({ noteId: Id, path: z.string() });
+
+/** Notes of a space: linked to the space directly and/or through its topics. */
+export const SpaceNote = z.object({ id: Id, title: z.string(), path: z.string(), vault: z.enum(["hub", "linked"]), direct: z.boolean(), topicIds: z.array(Id) });
 export const SpaceNoteList = z.object({ notes: z.array(SpaceNote) });
 export type SpaceNoteList = z.infer<typeof SpaceNoteList>;
