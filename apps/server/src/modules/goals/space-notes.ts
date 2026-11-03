@@ -4,14 +4,25 @@ import type { Db } from "../../lib/db/index.ts";
 import { spaces, topics } from "../../lib/db/schema.ts";
 import type { Vault } from "../vault/service.ts";
 import { linkNoteToSpace } from "./service.ts";
+import { PathError, validateNotePath } from "../../lib/fs-safe/paths.ts";
 
 /**
  * The vault folder for a space's new notes (HSLH-028). Set once, on first use: `Holberton/<project>` for imported
  * projects (set by the import), `Spaces/<space name>` otherwise. Renaming the space later moves nothing.
  */
 export function spaceFolder(db: Db, spaceId: string, name: string): string {
-  db.update(spaces).set({ noteFolder: `Spaces/${noteFileName(name)}` }).where(and(eq(spaces.id, spaceId), isNull(spaces.noteFolder))).run();
+  const stored = db.select({ f: spaces.noteFolder }).from(spaces).where(eq(spaces.id, spaceId)).get()?.f ?? null;
+  if (stored !== null && validFolder(stored)) return stored;
+  // Validate before persisting: a folder the vault rejects would block every new note in this space for good.
+  const candidate = `Spaces/${noteFileName(name)}`;
+  const folder = validFolder(candidate) ? candidate : "Spaces/Space";
+  const where = stored === null ? and(eq(spaces.id, spaceId), isNull(spaces.noteFolder)) : and(eq(spaces.id, spaceId), eq(spaces.noteFolder, stored));
+  db.update(spaces).set({ noteFolder: folder }).where(where).run();
   return db.select({ f: spaces.noteFolder }).from(spaces).where(eq(spaces.id, spaceId)).get()!.f!;
+}
+
+function validFolder(folder: string): boolean {
+  try { validateNotePath(`${folder}/x.md`); return true; } catch (e) { if (e instanceof PathError) return false; throw e; }
 }
 
 export type CreateSpaceNoteOutcome =

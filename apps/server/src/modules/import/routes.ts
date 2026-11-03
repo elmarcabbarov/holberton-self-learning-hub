@@ -57,8 +57,13 @@ export async function registerImportRoutes(app: FastifyInstance, database: Datab
           const note = await createLinked(body.data.note);
           if (note) { noteId = note.id; notePath = note.path; }
         }
+        // Task notes link to the project note by its vault path; if that name was taken the note got a suffix,
+        // so point the links at the path it really has (a bare [[name]] would resolve to the older note).
+        const requested = body.data.note ? `[[${body.data.note.path.replace(/\.md$/i, "")}]]` : null;
+        const actual = notePath ? `[[${notePath.replace(/\.md$/i, "")}]]` : null;
         for (const task of body.data.taskNotes) {
-          if (await createLinked(task)) taskNotes++; else taskNotesSkipped++;
+          const content = requested && actual && requested !== actual ? task.content.split(requested).join(actual) : task.content;
+          if (await createLinked({ path: task.path, content })) taskNotes++; else taskNotesSkipped++;
         }
       } catch (e) {
         // Writing the note failed (e.g. disk full): undo the database part so a retry starts clean.

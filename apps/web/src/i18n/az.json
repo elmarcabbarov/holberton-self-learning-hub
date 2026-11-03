@@ -252,7 +252,8 @@
       "approach": "Yanaşma",
       "pseudocode": "Psevdokod",
       "notes": "Qeydlər"
-    }
+    },
+    "taskNotesOverLimit": "{count, plural, one {# task bir importda 100 task qeydi limitindən artıqdır, qeydi yaradılmır.} other {# task bir importda 100 task qeydi limitindən artıqdır, qeydləri yaradılmır.}}"
   },
   "archive": {
     "showSpaces": "Arxivlənmiş sahələri göstər",

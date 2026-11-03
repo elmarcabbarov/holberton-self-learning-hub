@@ -252,7 +252,8 @@
       "approach": "Approach",
       "pseudocode": "Pseudocode",
       "notes": "Notes"
-    }
+    },
+    "taskNotesOverLimit": "{count, plural, one {# task is over the limit of 100 task notes per import and gets no note.} other {# tasks are over the limit of 100 task notes per import and get no note.}}"
   },
   "archive": {
     "showSpaces": "Show archived spaces",

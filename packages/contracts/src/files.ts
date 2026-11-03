@@ -4,6 +4,7 @@ export function noteFileName(title: string): string {
   const cleaned = noControl.replace(/[<>:"/\\|?*]/g, " ").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "");
   // Match the vault's path rules (D-052): no leading dot, no Windows-reserved stems.
   let name = cleaned.replace(/^\.+/, "").trim().slice(0, 120).replace(/[. ]+$/, "") || "Project";
-  if (/^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(name)) name = `${name} project`;
+  // Windows checks the part before the first dot: `CON.notes` is reserved too, so rename the stem.
+  if (/^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\..*)?$/i.test(name)) name = name.replace(/^[^.]*/, (stem) => `${stem} project`);
   return name;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allObjectiveKeys, buildImport, noteFileName, type ImportTexts } from "../src/features/import/buildImport.ts";
+import { allObjectiveKeys, buildImport, noteFileName, type ImportTexts, MAX_TASK_NOTES, omittedTaskNotes } from "../src/features/import/buildImport.ts";
 import type { ParsedProject } from "../src/features/import/parseProject.ts";
 
 const tx: ImportTexts = {
@@ -34,7 +34,7 @@ describe("buildImport", () => {
   it("writes one note per task next to the project note, linking back to it (HSLH-028)", () => {
     const r = buildImport(parsed, { spaceName: "Pipes: and Friends?", selected: allObjectiveKeys(parsed), withNote: true, withTaskNotes: true }, tx, "2026-11-02");
     expect(r.taskNotes.map((n) => n.path)).toEqual(["Holberton/Pipes and Friends/0. First.md", "Holberton/Pipes and Friends/1. Task 1.md"]);
-    expect(r.taskNotes[0]!.content).toBe("# 0. First\n\nProject: [[Pipes and Friends]]\n\n## What I read\n\n## The problem in my own words\n\n## Approach\n\n## Pseudocode\n\n## Notes\n");
+    expect(r.taskNotes[0]!.content).toBe("# 0. First\n\nProject: [[Holberton/Pipes and Friends/Pipes and Friends]]\n\n## What I read\n\n## The problem in my own words\n\n## Approach\n\n## Pseudocode\n\n## Notes\n");
     const alone = buildImport(parsed, { spaceName: "Pipes", selected: allObjectiveKeys(parsed), withNote: false, withTaskNotes: true }, tx, "2026-11-02");
     expect(alone.taskNotes[0]!.content).not.toContain("[["); // no link to a project note that is not created
   });
@@ -43,5 +43,14 @@ describe("buildImport", () => {
     expect(noteFileName("...")).toBe("Project");
     expect(noteFileName(".NET basics")).toBe("NET basics");
     expect(noteFileName("CON")).toBe("CON project");
+    expect(noteFileName("CON.notes")).toBe("CON project.notes"); // Windows reserves the stem before the first dot too
+    expect(noteFileName("lpt1.txt")).toBe("lpt1 project.txt");
+  });
+  it("caps task notes at the server limit and reports how many were left out (Codex review)", () => {
+    const many: ParsedProject = { ...parsed, tasks: Array.from({ length: 103 }, (_, i) => ({ number: i, title: `T${i}` })) };
+    const r = buildImport(many, { spaceName: "Many", selected: allObjectiveKeys(many), withNote: true, withTaskNotes: true }, tx, "2026-11-02");
+    expect(r.taskNotes).toHaveLength(MAX_TASK_NOTES);
+    expect(omittedTaskNotes(many)).toBe(3);
+    expect(omittedTaskNotes(parsed)).toBe(0);
   });
 });

@@ -13,6 +13,11 @@ export interface ImportTexts {
   taskNote: { project: string; read: string; problem: string; approach: string; pseudocode: string; notes: string };
 }
 
+/** The server accepts at most this many task notes per import (contracts `ImportProjectRequest`). */
+export const MAX_TASK_NOTES = 100;
+/** Task notes left out by the limit; the preview and the result say so (D-068: nothing is dropped silently). */
+export const omittedTaskNotes = (p: ParsedProject) => Math.max(0, p.tasks.length - MAX_TASK_NOTES);
+
 /** Builds the import request from a parsed page and the user's choices in the preview. */
 export function buildImport(p: ParsedProject, choices: { spaceName: string; selected: Set<string>; withNote: boolean; withTaskNotes: boolean }, tx: ImportTexts, date: string): ImportProjectRequest {
   const key = (gi: number, oi: number) => `${gi}:${oi}`;
@@ -38,12 +43,12 @@ export function buildImport(p: ParsedProject, choices: { spaceName: string; sele
   // Holberton is Projects → Tasks: the project note and one note per task share the project's folder (HSLH-028).
   const project = noteFileName(choices.spaceName);
   const folder = `Holberton/${project}`;
-  const taskNotes = choices.withTaskNotes ? p.tasks.slice(0, 100).map((task) => {
+  const taskNotes = choices.withTaskNotes ? p.tasks.slice(0, MAX_TASK_NOTES).map((task) => {
     const title = `${task.number}. ${task.title ?? tx.taskPlaceholder(task.number)}`;
     const h = tx.taskNote;
     const content = [
       `# ${title}`, "",
-      ...(choices.withNote ? [`${h.project}: [[${project}]]`, ""] : []),
+      ...(choices.withNote ? [`${h.project}: [[${folder}/${project}]]`, ""] : []),
       `## ${h.read}`, "", `## ${h.problem}`, "", `## ${h.approach}`, "", `## ${h.pseudocode}`, "", `## ${h.notes}`, "",
     ].join("\n");
     return { path: `${folder}/${noteFileName(title)}.md`, content };

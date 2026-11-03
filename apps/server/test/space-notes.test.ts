@@ -29,6 +29,14 @@ describe("many notes per space (HSLH-028)", () => {
     expect(SpaceDetail.parse((await t.req({ method: "GET", url: `/api/spaces/${s.id}` })).json()).noteFolder).toBe("Spaces/0x0B. C - malloc");
   });
 
+  it("never stores a folder the vault rejects: a space named CON.notes still gets notes (Codex review)", async () => {
+    const s = await space("CON.notes");
+    const made = await create(s.id, { title: "First" });
+    expect(made.statusCode).toBe(201);
+    expect(CreatedSpaceNote.parse(made.json()).path).toBe("Spaces/CON project.notes/First.md");
+    expect((await create(s.id, { title: "Second" })).statusCode).toBe(201);
+  });
+
   it("links to a topic of the same space only, and refuses archived spaces", async () => {
     const s = await space();
     const other = await space("Other");
