@@ -36,12 +36,13 @@ export function toApi(row: CardRow) {
   };
 }
 
-export function createCard(db: Db, input: { topicId: string | null; noteId: string | null; front: string; back: string }, now = new Date()) {
+export function createCard(db: Db, input: { topicId: string | null; noteId: string | null; front: string; back: string; aiOrigin?: { draftItemId: string } }, now = new Date()) {
   if (input.topicId && !db.select().from(topics).where(eq(topics.id, input.topicId)).get()) return { kind: "bad_topic" as const };
   if (input.noteId && !db.select().from(notes).where(eq(notes.id, input.noteId)).get()) return { kind: "bad_note" as const };
   const row: CardRow = {
     id: randomUUID(), topicId: input.topicId, noteId: input.noteId, blockAnchor: null, front: input.front, back: input.back,
-    origin: "manual", suspended: false, ...fromFsrs(createEmptyCard(now)), createdAt: iso(now), updatedAt: iso(now), archivedAt: null,
+    origin: input.aiOrigin ? "ai" : "manual", draftItemId: input.aiOrigin?.draftItemId ?? null,
+    suspended: false, ...fromFsrs(createEmptyCard(now)), createdAt: iso(now), updatedAt: iso(now), archivedAt: null,
   };
   db.insert(cards).values(row).run();
   return { kind: "created" as const, card: row };

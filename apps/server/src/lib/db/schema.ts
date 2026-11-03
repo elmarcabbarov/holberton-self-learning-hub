@@ -120,6 +120,7 @@ export const cards = sqliteTable("cards", {
   front: text("front").notNull(),
   back: text("back").notNull(),
   origin: text("origin").notNull(), // manual | ai | import
+  draftItemId: text("draft_item_id"), // AI provenance; core does not depend on the drafts module.
   suspended: integer("suspended", { mode: "boolean" }).notNull().default(false),
   due: text("due").notNull(),
   stability: real("stability").notNull(),
@@ -318,3 +319,48 @@ export const tutorMessages = sqliteTable("tutor_messages", {
   uniqueIndex("tutor_messages_streaming_unique").on(t.threadId).where(sql`${t.role} = 'assistant' AND ${t.status} = 'streaming'`),
   index("tutor_messages_thread_seq_idx").on(t.threadId, t.seq),
 ]);
+
+/** Frozen note → reviewable drafts. No provider call happens before the identity is durable (D-067). */
+export const aiDrafts = sqliteTable("ai_drafts", {
+  id: text("id").primaryKey(),
+  requestId: text("request_id").notNull().unique(),
+  requestJson: text("request_json").notNull(),
+  noteId: text("note_id").notNull().references(() => notes.id),
+  topicId: text("topic_id").references(() => topics.id),
+  kind: text("kind", { enum: ["cards", "quiz"] }).notNull(),
+  lang: text("lang", { enum: ["en", "az"] }).notNull(),
+  noteText: text("note_text").notNull(),
+  noteSha256: text("note_sha256").notNull(),
+  status: text("status", { enum: ["generating", "ready", "failed", "interrupted"] }).notNull(),
+  errorCode: text("error_code"),
+  dropped: integer("dropped").notNull().default(0),
+  providerId: text("provider_id").notNull(),
+  model: text("model").notNull(),
+  revision: integer("revision").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  locality: text("locality", { enum: ["local", "remote"] }).notNull(),
+  consentJson: text("consent_json"), // revision only; no note content in consent metadata
+  consentedAt: text("consented_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [index("ai_drafts_note_idx").on(t.noteId, t.createdAt)]);
+
+export const aiDraftItems = sqliteTable("ai_draft_items", {
+  id: text("id").primaryKey(),
+  draftId: text("draft_id").notNull().references(() => aiDrafts.id),
+  position: integer("position").notNull(),
+  payloadJson: text("payload_json").notNull(),
+  originalJson: text("original_json").notNull(),
+  version: integer("version").notNull().default(1),
+  status: text("status", { enum: ["draft", "rejected", "committed"] }).notNull().default("draft"),
+  committedRef: text("committed_ref"),
+  warningsJson: text("warnings_json").notNull().default("[]"),
+}, (t) => [index("ai_draft_items_draft_idx").on(t.draftId, t.position)]);
+
+export const aiDraftCommits = sqliteTable("ai_draft_commits", {
+  commitId: text("commit_id").primaryKey(),
+  draftId: text("draft_id").notNull().references(() => aiDrafts.id),
+  selectionJson: text("selection_json").notNull(), // canonical selection + versions + destination
+  resultJson: text("result_json").notNull(),
+  createdAt: text("created_at").notNull(),
+});

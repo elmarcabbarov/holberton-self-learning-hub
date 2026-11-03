@@ -189,7 +189,8 @@ export class MockProvider implements AIProvider {
     yield { type: "done", usage: { inputTokens: null, outputTokens: null } };
   }
 
-  async generateObject<T>(req: ObjectRequest<T>): Promise<ObjectResult<T>> {
+  async generateObject<T>(req: ObjectRequest<T>, signal?: AbortSignal): Promise<ObjectResult<T>> {
+    signal?.throwIfAborted();
     const v = req.schema.safeParse(this.objects.shift());
     return v.success ? { ok: true, value: v.data, attempts: 1 } : { ok: false, error: "schema_invalid", attempts: 1 };
   }

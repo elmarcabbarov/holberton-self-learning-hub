@@ -13,7 +13,7 @@ export type QuizMode = z.infer<typeof QuizMode>;
 /** 1 = guessing … 5 = certain. A calibration signal, never a measurement (D-005). */
 export const Confidence = z.number().int().min(1).max(5);
 
-const indices = z.array(z.number().int().min(0).max(MAX_OPTIONS - 1));
+const indices = z.array(z.number().int().min(0).max(MAX_OPTIONS - 1)).max(MAX_OPTIONS);
 
 /** The answer key. mcq: exactly one index; multi: one or more (all-or-nothing); short_self: a reference the learner compares against. */
 export const AnswerKey = z.union([

@@ -680,5 +680,11 @@
     "folder": "Yeni qeydlər {folder} qovluğunda saxlanılır.",
     "linkedDirect": "Sahəyə bağlıdır",
     "newPlaceholder": "məs. 3. Linked list"
+  },
+  "drafts": {
+    "conflict": "Bu qaralama dəyişib və ya bu əməliyyat üçün istifadə edilə bilməz. Yeniləyib yenidən cəhd edin.",
+    "consentRequired": "Bu qeydin cari AI ayarları ilə göndərilməsinə razılıq verin.",
+    "noteTooLarge": "Bu qeyd qaralama yaratmaq üçün çox böyükdür (ən çox 24 000 simvol).",
+    "shuttingDown": "Server bağlanır. Yenidən başladıqdan sonra cəhd edin."
   }
 }

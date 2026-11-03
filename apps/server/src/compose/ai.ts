@@ -8,6 +8,7 @@ import { ExamService } from "../modules/exam-mode/service.ts";
 import { registerExamRoutes } from "../modules/exam-mode/routes.ts";
 import { registerTutorRoutes } from "../modules/tutor/routes.ts";
 import type { Resolve } from "../modules/ai/net.ts";
+import { registerDraftRoutes } from "../modules/drafts/routes.ts";
 
 /**
  * Composition root for the optional AI module (ADR-007): the only place outside `modules/ai` that may
@@ -19,5 +20,6 @@ export async function wireAI(app: FastifyInstance, database: DatabaseHandle, con
   await registerAIRoutes(app, ai);
   await registerExamRoutes(app, exam);
   await registerTutorRoutes(app, database, ai, exam);
+  await registerDraftRoutes(app, database, ai, exam, [app.vault, ...(app.linkedVault ? [app.linkedVault] : [])]);
   return ai;
 }

@@ -9,6 +9,8 @@ type TopicRow = typeof topics.$inferSelect;
 
 const now = () => new Date().toISOString();
 
+export const getTopic = (db: Db, id: string) => db.select().from(topics).where(eq(topics.id, id)).get();
+
 function topicCount(db: Db, spaceId: string): number {
   return db.select({ n: count() }).from(topics)
     .where(and(eq(topics.spaceId, spaceId), isNull(topics.archivedAt))).get()?.n ?? 0;
