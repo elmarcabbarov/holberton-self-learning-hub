@@ -1,6 +1,6 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useState, type ComponentProps, type InputHTMLAttributes, type ReactNode } from "react";
 
-export function Button({ variant = "secondary", className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" }) {
+export function Button({ variant = "secondary", className = "", ...props }: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "ghost" }) {
   const styles = {
     primary: "bg-brand text-white hover:bg-brand-dark border-transparent",
     secondary: "bg-surface-2 text-fg border-line hover:bg-surface",

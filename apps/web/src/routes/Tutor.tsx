@@ -147,9 +147,11 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
       });
       return completed;
     },
-    onSuccess: async (answer) => {
-      await qc.invalidateQueries({ queryKey: detailKey(id) });
-      setActive(null); setAnnouncement(answer);
+    // The streamed answer stays on screen until the server's copy of this request is loaded (see the effect
+    // below); a failed or slow refresh never hides it and never blocks the composer.
+    onSuccess: (answer) => {
+      setAnnouncement(answer);
+      void qc.invalidateQueries({ queryKey: detailKey(id) });
     },
     onError: (error) => {
       const code = controller.current?.signal.aborted ? "cancelled" : error instanceof ApiError ? error.code : "interrupted";
@@ -160,6 +162,14 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
     },
     onSettled: () => { controller.current = null; onBusy(false); void qc.invalidateQueries({ queryKey: threadsKey }); composer.current?.focus(); },
   });
+  // Reconcile by request id: once the server reports a final state for the active request (even one whose
+  // stream dropped after the commit), its stored messages replace the local copy.
+  useEffect(() => {
+    if (!active || send.isPending) return;
+    const user = thread.data?.messages.find((m) => m.role === "user" && m.requestId === active.payload.requestId);
+    const answer = user && thread.data?.messages.find((m) => m.replyTo === user.id);
+    if (answer && answer.status !== "streaming") setActive(null);
+  }, [thread.data, active, send.isPending]);
   const archive = useMutation({ mutationFn: () => apiJson(`/api/tutor/threads/${id}`, TutorThread, { method: "PATCH", body: { archived: !thread.data?.archivedAt } }), onSuccess: () => { void qc.invalidateQueries({ queryKey: detailKey(id) }); void qc.invalidateQueries({ queryKey: threadsKey }); } });
   const submit = (kind: SendTutorMessage["kind"]) => {
     if (send.isPending) return;
@@ -186,6 +196,7 @@ function Conversation({ id, ai, disabled, unavailable, onBusy }: { id: string; a
         <Button disabled={send.isPending || otherStream || archive.isPending} onClick={() => archive.mutate()}>{t(thread.data.archivedAt ? "archive.restore" : "tutor.archive")}</Button>
       </div>
       {archive.isError ? <p role="alert">{errorText(archive.error)}</p> : null}
+      {thread.isRefetchError ? <p role="alert" className="mt-2 text-[14px]">{t("errors.loadFailed")}</p> : null}
       <div role="group" className="mt-5 space-y-5" aria-label={t("tutor.messages")}>
         {messages.filter((m) => !active || (m.id !== activeUser?.id && m.replyTo !== activeUser?.id)).map((message) => {
           const payload = persistedRetry(message);

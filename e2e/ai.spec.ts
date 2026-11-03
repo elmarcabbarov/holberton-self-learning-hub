@@ -94,7 +94,7 @@ test("Framework tutor: AI off, skip, conversation, hint ladder, peer bridge, mod
   const exam = page.getByRole("region", { name: "Exam mode", exact: true });
   await exam.getByRole("button", { name: "Start for 1 h" }).click();
   await expect(page.getByText(/Exam mode until .* — AI is off/)).toBeVisible();
-  await expect(exam.getByRole("button", { name: "End now" })).toBeVisible();
+  await expect(exam.getByRole("button", { name: "End now" })).toBeFocused(); // focus follows the replaced control
   await expect(page.getByRole("button", { name: "Test the model" })).toBeDisabled();
   await page.goto(`/spaces/${space.id}/tutor`);
   await page.getByRole("button", { name: /Processes/ }).click();
@@ -103,6 +103,7 @@ test("Framework tutor: AI off, skip, conversation, hint ladder, peer bridge, mod
   await page.goto("/settings");
   await exam.getByRole("button", { name: "End now" }).click();
   await expect(page.getByText(/Exam mode until .* — AI is off/)).toHaveCount(0);
+  await expect(exam.getByRole("button", { name: "Start for 1 h" })).toBeFocused();
   await expect(page.getByRole("button", { name: "Test the model" })).toBeEnabled();
   await page.goto(`/spaces/${space.id}/tutor`);
   await page.getByRole("button", { name: /Processes/ }).click();
@@ -138,6 +139,38 @@ test("failed hint retries the same request and payload, including the original l
   expect(payloads).toHaveLength(2);
   expect(payloads[1]).toEqual(payloads[0]);
   expect(payloads[1]).toMatchObject({ lang: "en", kind: "hint", content: "Help me understand fork." });
+});
+
+test("a streamed answer survives a failed refresh, and a stored answer replaces a dropped stream", async ({ page }) => {
+  await resetAI(page);
+  await setAI(page, "mock");
+  const space = await (await page.request.post("/api/spaces", { headers, data: { name: `Reconcile tutor ${Date.now()}` } })).json();
+  await page.goto(`/spaces/${space.id}/tutor`);
+  await page.getByRole("button", { name: "I already did this — skip" }).click();
+  const conversation = page.getByRole("region", { name: "Conversation", exact: true });
+
+  await expect(page.getByLabel("Your question or reply")).toBeVisible(); // the thread is loaded before refreshes fail
+  // 1. The answer streams, then refreshing the thread fails: the answer stays and the failure is shown.
+  await page.route(/\/api\/tutor\/threads\/[^/]+$/, (route) => (route.request().method() === "GET" ? route.fulfill({ status: 500, body: "{}" }) : route.continue()));
+  await page.getByLabel("Your question or reply").fill("First question");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(conversation.getByText(/^mock:/).first()).toBeVisible();
+  await expect(conversation.getByRole("alert")).toContainText("Could not load");
+  await expect(page.getByRole("button", { name: "Next hint", exact: true })).toBeEnabled();
+  await page.unrouteAll({ behavior: "wait" });
+
+  // 2. The server stores the answer but the stream ends before `done`: once the thread reloads, the stored
+  // answer is shown and no interruption alert remains.
+  await page.route("**/api/tutor/threads/*/messages", async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).split("\n\n").filter((f) => !f.startsWith("event: done")).join("\n\n");
+    await route.fulfill({ response: res, body });
+  });
+  await page.getByLabel("Your question or reply").fill("Second question");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(conversation.getByText("Second question")).toBeVisible();
+  await expect(conversation.getByRole("alert")).toHaveCount(0);
+  await expect(conversation.getByRole("button", { name: "Try again" })).toHaveCount(0);
 });
 
 test("exam mode follows the server on focus and expiry; incomplete and remote AI settings are explained", async ({ page }) => {
