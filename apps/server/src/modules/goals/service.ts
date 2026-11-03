@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, count, eq, inArray, isNotNull, isNull, max } from "drizzle-orm";
 import { GOAL_LIMITS, type CreateGoal, type Goal, type UpdateGoal, type UpdateTask } from "@hub/contracts";
 import type { Db } from "../../lib/db/index.ts";
-import { goals, goalTasks, notes, noteTopics, spaces, topics } from "../../lib/db/schema.ts";
+import { goals, goalTasks, notes, noteSpaces, noteTopics, spaces, topics } from "../../lib/db/schema.ts";
 
 type GoalRow = typeof goals.$inferSelect;
 const IMMEDIATE = { behavior: "immediate" } as const;
@@ -141,18 +141,50 @@ export function setNoteTopics(db: Db, noteId: string, topicIds: string[]) {
   }, IMMEDIATE);
 }
 
-/** Notes linked to any topic of the space, with the space's topic ids each note has. Missing notes are left out. */
+/**
+ * Notes of the space: linked to it directly (HSLH-028) and/or through any of its topics, each listed once with how
+ * it is linked. Missing notes are left out.
+ */
 export function spaceNotes(db: Db, spaceId: string) {
-  const rows = db.select({ id: notes.id, title: notes.title, path: notes.path, vault: notes.vault, topicId: noteTopics.topicId })
-    .from(noteTopics).innerJoin(topics, eq(topics.id, noteTopics.topicId)).innerJoin(notes, eq(notes.id, noteTopics.noteId))
-    .where(and(eq(topics.spaceId, spaceId), isNull(notes.missingSince))).orderBy(asc(notes.title)).all();
-  const byNote = new Map<string, { id: string; title: string; path: string; vault: "hub" | "linked"; topicIds: string[] }>();
-  for (const r of rows) {
-    const n = byNote.get(r.id) ?? { id: r.id, title: r.title, path: r.path, vault: r.vault as "hub" | "linked", topicIds: [] };
-    n.topicIds.push(r.topicId);
+  type Entry = { id: string; title: string; path: string; vault: "hub" | "linked"; direct: boolean; topicIds: string[] };
+  const byNote = new Map<string, Entry>();
+  const entry = (r: { id: string; title: string; path: string; vault: string }) => {
+    const n = byNote.get(r.id) ?? { id: r.id, title: r.title, path: r.path, vault: r.vault as "hub" | "linked", direct: false, topicIds: [] };
     byNote.set(r.id, n);
-  }
-  return [...byNote.values()];
+    return n;
+  };
+  const cols = { id: notes.id, title: notes.title, path: notes.path, vault: notes.vault };
+  for (const r of db.select(cols).from(noteSpaces).innerJoin(notes, eq(notes.id, noteSpaces.noteId))
+    .where(and(eq(noteSpaces.spaceId, spaceId), isNull(notes.missingSince))).all()) entry(r).direct = true;
+  for (const r of db.select({ ...cols, topicId: noteTopics.topicId }).from(noteTopics).innerJoin(topics, eq(topics.id, noteTopics.topicId)).innerJoin(notes, eq(notes.id, noteTopics.noteId))
+    .where(and(eq(topics.spaceId, spaceId), isNull(notes.missingSince))).all()) entry(r).topicIds.push(r.topicId);
+  return [...byNote.values()].sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+}
+
+export function noteSpaceRefs(db: Db, noteId: string) {
+  return db.select({ id: spaces.id, name: spaces.name }).from(noteSpaces).innerJoin(spaces, eq(spaces.id, noteSpaces.spaceId))
+    .where(eq(noteSpaces.noteId, noteId)).orderBy(asc(spaces.name)).all();
+}
+
+/** Replaces the spaces a note is linked to directly (database only, like note topics). */
+export function setNoteSpaces(db: Db, noteId: string, spaceIds: string[]) {
+  return db.transaction((tx) => {
+    if (!tx.select().from(notes).where(eq(notes.id, noteId)).get()) return { kind: "not_found" as const };
+    const ids = [...new Set(spaceIds)];
+    if (ids.length > 0 && tx.select({ n: count() }).from(spaces).where(inArray(spaces.id, ids)).get()!.n !== ids.length) return { kind: "bad_space" as const };
+    const existing = new Set(tx.select({ id: noteSpaces.spaceId }).from(noteSpaces).where(eq(noteSpaces.noteId, noteId)).all().map((r) => r.id));
+    for (const id of existing) if (!ids.includes(id)) tx.delete(noteSpaces).where(and(eq(noteSpaces.noteId, noteId), eq(noteSpaces.spaceId, id))).run();
+    for (const id of ids) if (!existing.has(id)) tx.insert(noteSpaces).values({ noteId, spaceId: id, createdAt: now() }).run();
+    return { kind: "ok" as const };
+  }, IMMEDIATE);
+}
+
+/** Links a note to a space (and optionally one of its topics); used after creating the note's file. */
+export function linkNoteToSpace(db: Db, noteId: string, spaceId: string, topicId?: string) {
+  db.transaction((tx) => {
+    tx.insert(noteSpaces).values({ noteId, spaceId, createdAt: now() }).onConflictDoNothing().run();
+    if (topicId) tx.insert(noteTopics).values({ noteId, topicId, createdAt: now() }).onConflictDoNothing().run();
+  }, IMMEDIATE);
 }
 
 export const noteExists = (db: Db, id: string) => db.select({ id: notes.id }).from(notes).where(eq(notes.id, id)).get() !== undefined;

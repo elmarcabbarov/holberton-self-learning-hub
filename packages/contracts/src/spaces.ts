@@ -21,6 +21,8 @@ export const TutorMode = z.enum(["project", "explain"]);
 
 export const Space = z.object({
   tutorMode: TutorMode.nullable(),
+  /** Vault folder for notes created from this space; null until the first one (HSLH-028). */
+  noteFolder: z.string().nullable(),
   id: Id,
   name: Name,
   description: z.string(),

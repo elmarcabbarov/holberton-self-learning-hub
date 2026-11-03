@@ -1,368 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3fdd0ee3-73a7-4612-b8dc-7cba0f9a5b28",
+  "id": "8d30ce19-45cf-44a6-87dc-de7d8a96581a",
   "prevId": "06588e00-1d3e-4996-9513-3cc2996d72aa",
   "tables": {
-    "ai_draft_commits": {
-      "name": "ai_draft_commits",
-      "columns": {
-        "commit_id": {
-          "name": "commit_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "draft_id": {
-          "name": "draft_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "selection_json": {
-          "name": "selection_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "result_json": {
-          "name": "result_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "ai_draft_commits_draft_id_ai_drafts_id_fk": {
-          "name": "ai_draft_commits_draft_id_ai_drafts_id_fk",
-          "tableFrom": "ai_draft_commits",
-          "tableTo": "ai_drafts",
-          "columnsFrom": [
-            "draft_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "ai_draft_items": {
-      "name": "ai_draft_items",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "draft_id": {
-          "name": "draft_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "payload_json": {
-          "name": "payload_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "original_json": {
-          "name": "original_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "version": {
-          "name": "version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'draft'"
-        },
-        "committed_ref": {
-          "name": "committed_ref",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "warnings_json": {
-          "name": "warnings_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        }
-      },
-      "indexes": {
-        "ai_draft_items_draft_idx": {
-          "name": "ai_draft_items_draft_idx",
-          "columns": [
-            "draft_id",
-            "position"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "ai_draft_items_draft_id_ai_drafts_id_fk": {
-          "name": "ai_draft_items_draft_id_ai_drafts_id_fk",
-          "tableFrom": "ai_draft_items",
-          "tableTo": "ai_drafts",
-          "columnsFrom": [
-            "draft_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "ai_drafts": {
-      "name": "ai_drafts",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "request_id": {
-          "name": "request_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "request_json": {
-          "name": "request_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "note_id": {
-          "name": "note_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "topic_id": {
-          "name": "topic_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "lang": {
-          "name": "lang",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "note_text": {
-          "name": "note_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "note_sha256": {
-          "name": "note_sha256",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "error_code": {
-          "name": "error_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "dropped": {
-          "name": "dropped",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "provider_id": {
-          "name": "provider_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "model": {
-          "name": "model",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "revision": {
-          "name": "revision",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "prompt_version": {
-          "name": "prompt_version",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "locality": {
-          "name": "locality",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "consent_json": {
-          "name": "consent_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "consented_at": {
-          "name": "consented_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "ai_drafts_request_id_unique": {
-          "name": "ai_drafts_request_id_unique",
-          "columns": [
-            "request_id"
-          ],
-          "isUnique": true
-        },
-        "ai_drafts_note_idx": {
-          "name": "ai_drafts_note_idx",
-          "columns": [
-            "note_id",
-            "created_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "ai_drafts_note_id_notes_id_fk": {
-          "name": "ai_drafts_note_id_notes_id_fk",
-          "tableFrom": "ai_drafts",
-          "tableTo": "notes",
-          "columnsFrom": [
-            "note_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "ai_drafts_topic_id_topics_id_fk": {
-          "name": "ai_drafts_topic_id_topics_id_fk",
-          "tableFrom": "ai_drafts",
-          "tableTo": "topics",
-          "columnsFrom": [
-            "topic_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "ai_settings": {
       "name": "ai_settings",
       "columns": {
@@ -628,13 +269,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "draft_item_id": {
-          "name": "draft_item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "suspended": {
@@ -1186,6 +820,80 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "note_spaces": {
+      "name": "note_spaces",
+      "columns": {
+        "note_id": {
+          "name": "note_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "space_id": {
+          "name": "space_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "note_spaces_space_idx": {
+          "name": "note_spaces_space_idx",
+          "columns": [
+            "space_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "note_spaces_note_id_notes_id_fk": {
+          "name": "note_spaces_note_id_notes_id_fk",
+          "tableFrom": "note_spaces",
+          "tableTo": "notes",
+          "columnsFrom": [
+            "note_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "note_spaces_space_id_spaces_id_fk": {
+          "name": "note_spaces_space_id_spaces_id_fk",
+          "tableFrom": "note_spaces",
+          "tableTo": "spaces",
+          "columnsFrom": [
+            "space_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "note_spaces_note_id_space_id_pk": {
+          "columns": [
+            "note_id",
+            "space_id"
+          ],
+          "name": "note_spaces_note_id_space_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -1878,6 +1586,13 @@
       "columns": {
         "tutor_mode": {
           "name": "tutor_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note_folder": {
+          "name": "note_folder",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

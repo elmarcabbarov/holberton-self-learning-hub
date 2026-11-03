@@ -7,6 +7,8 @@ export const ImportProjectRequest = z.object({
   spaceName: Name,
   topics: z.array(z.object({ name: Name, cards: z.array(z.object({ front: CardText, back: CardText })).max(200) })).max(50),
   note: z.object({ path: z.string().min(1).max(512), content: z.string().max(200_000) }).nullable(),
+  /** One note per project task (HSLH-028), in the same folder as the project note. */
+  taskNotes: z.array(z.object({ path: z.string().min(1).max(512), content: z.string().max(20_000) })).max(100).default([]),
 }).refine((r) => r.topics.reduce((n, t) => n + t.cards.length, 0) <= 500, "too many cards");
 export type ImportProjectRequest = z.infer<typeof ImportProjectRequest>;
 
@@ -18,5 +20,8 @@ export const ImportProjectResult = z.object({
   notePath: z.string().nullable(),
   /** A note was requested but could not be created (e.g. the name is not allowed). */
   noteSkipped: z.boolean(),
+  /** Task notes created, and those skipped because the path was taken or not allowed. */
+  taskNotes: z.number().int(),
+  taskNotesSkipped: z.number().int(),
 });
 export type ImportProjectResult = z.infer<typeof ImportProjectResult>;

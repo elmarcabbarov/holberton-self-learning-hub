@@ -39,7 +39,7 @@ export function getSpace(db: Db, id: string) {
 
 export function createSpace(db: Db, input: CreateSpace) {
   const ts = now();
-  const row: SpaceRow = { id: randomUUID(), name: input.name, description: input.description, createdAt: ts, updatedAt: ts, archivedAt: null, tutorMode: "explain" };
+  const row: SpaceRow = { id: randomUUID(), name: input.name, description: input.description, createdAt: ts, updatedAt: ts, archivedAt: null, tutorMode: "explain", noteFolder: null };
   db.insert(spaces).values(row).run();
   return toSpace(db, row);
 }

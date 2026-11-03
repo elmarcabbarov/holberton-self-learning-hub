@@ -241,7 +241,19 @@
     "cardBackWithResources": "Səsli de və ya lövhədə çək, sonra özünü yoxla. Bunu peer-ə izah edə bilərdinmi? Mənbələr: {resources}",
     "taskPlaceholder": "Task {n}",
     "noteIntro": "{date} tarixində Holberton intranet-dən import olunub. Həlləri özün yazırsan — The Framework-ə əməl et.",
-    "noteSkipped": "Project qeydi bu adla yaradıla bilmədi. Onu Qeydlər səhifəsində özün yarada bilərsən."
+    "noteSkipped": "Project qeydi bu adla yaradıla bilmədi. Onu Qeydlər səhifəsində özün yarada bilərsən.",
+    "withTaskNotes": "{count, plural, one {Task üçün qeyd yarat} other {# task-ın hər biri üçün qeyd yarat}}",
+    "taskNotesDone": "{count, plural, one {# task qeydi yaradıldı.} other {# task qeydi yaradıldı.}}",
+    "taskNotesSkipped": "{count, plural, one {# task qeydi ötürüldü: adı tutulub və ya icazəli deyil.} other {# task qeydi ötürüldü: adları tutulub və ya icazəli deyil.}}",
+    "taskNote": {
+      "project": "Layihə",
+      "read": "Nə oxudum",
+      "problem": "Problem öz sözlərimlə",
+      "approach": "Yanaşma",
+      "pseudocode": "Psevdokod",
+      "notes": "Qeydlər"
+    },
+    "taskNotesOverLimit": "{count, plural, one {# task bir importda 100 task qeydi limitindən artıqdır, qeydi yaradılmır.} other {# task bir importda 100 task qeydi limitindən artıqdır, qeydləri yaradılmır.}}"
   },
   "archive": {
     "showSpaces": "Arxivlənmiş sahələri göstər",
@@ -463,7 +475,7 @@
     "remove": "{name} mövzusunu çıxar",
     "add": "Mövzuya bağla…",
     "spaceTitle": "Qeydlər",
-    "spaceIntro": "Bu sahənin mövzularına bağlı qeydlər. Qeydi onun yan panelindən bağla; faylın özü dəyişmir.",
+    "spaceIntro": "Bu sahəyə birbaşa və ya mövzuları üzərindən bağlı qeydlər. Burada yeni qeyd yarat, ya da mövcud qeydi onun yan panelindən bağla; faylın özü dəyişmir.",
     "spaceListLabel": "Bu sahəyə bağlı qeydlər",
     "spaceEmpty": "Hələ bağlı qeyd yoxdur."
   },
@@ -649,6 +661,24 @@
     "chosen": "Seçilmiş vaxtadək",
     "start": "İmtahan rejimini başlat",
     "banner": "İmtahan rejimi {time} vaxtınadək — süni intellekt söndürülüb"
+  },
+  "noteSpaces": {
+    "title": "Sahələr",
+    "add": "Sahəyə bağla",
+    "remove": "{name} sahəsindən çıxar",
+    "listLabel": "Bu qeydin sahələri",
+    "badSpace": "Bu sahə artıq mövcud deyil.",
+    "archived": "Bu sahə arxivdədir. Qeyd əlavə etmək üçün onu bərpa et.",
+    "badTitle": "Bu başlıq fayl adı kimi istifadə oluna bilməz.",
+    "taken": "Bu başlıqla çox qeyd var. Başqa başlıq seç.",
+    "new": "Yeni qeyd",
+    "newTitle": "Qeydin başlığı",
+    "newTopic": "Mövzu (istəyə bağlı)",
+    "noTopic": "Mövzusuz",
+    "create": "Yarat və aç",
+    "folder": "Yeni qeydlər {folder} qovluğunda saxlanılır.",
+    "linkedDirect": "Sahəyə bağlıdır",
+    "newPlaceholder": "məs. 3. Linked list"
   },
   "drafts": {
     "conflict": "Bu qaralama dəyişib və ya bu əməliyyat üçün istifadə edilə bilməz. Yeniləyib yenidən cəhd edin.",

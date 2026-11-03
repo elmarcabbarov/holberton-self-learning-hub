@@ -99,7 +99,7 @@ export async function buildApp(config: HubConfig, deps: AppDeps = {}): Promise<F
   await registerSpaceRoutes(app, database);
   await registerCardRoutes(app, database);
   await registerQuizRoutes(app, database);
-  await registerGoalRoutes(app, database);
+  await registerGoalRoutes(app, database, vault);
   await registerSessionRoutes(app, database);
   await wireAI(app, database, config, { ...(deps.aiFetch ? { fetch: deps.aiFetch } : {}), ...(deps.aiResolve ? { resolve: deps.aiResolve } : {}) });
   await registerImportRoutes(app, database, vault);

@@ -86,7 +86,7 @@ describe("note ↔ topic links", () => {
     expect(set.topics).toEqual([{ id: topicId, name: "Pipes", spaceId, spaceName: "Shell" }]);
     expect((await t.req({ method: "GET", url: `/api/notes/${note.id}` })).json().version.sha256).toBe(before); // file untouched
     expect(SpaceNoteList.parse((await t.req({ method: "GET", url: `/api/spaces/${spaceId}/notes` })).json()).notes).toEqual([
-      { id: note.id, title: "Pipes", path: "pipes.md", vault: "hub", topicIds: [topicId] },
+      { id: note.id, title: "Pipes", path: "pipes.md", vault: "hub", direct: false, topicIds: [topicId] },
     ]);
     expect(TopicRefList.parse((await t.req({ method: "GET", url: "/api/topics" })).json()).topics.map((x) => x.id)).toEqual([topicId]);
     const cleared = TopicRefList.parse((await t.req({ method: "PUT", url: `/api/notes/${note.id}/topics`, payload: { topicIds: [] } })).json());

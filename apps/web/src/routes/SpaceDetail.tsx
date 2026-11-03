@@ -131,6 +131,9 @@ export function SpaceDetailPage() {
         </details>
       ) : null}
 
+      {/* Notes come right after topics: a Holberton project is a set of tasks, each with its own notes (HSLH-028). */}
+      <SpaceNotes space={space.data} />
+
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-[20px] font-medium">{t("cards.title")}</h2>
@@ -154,7 +157,6 @@ export function SpaceDetailPage() {
       </Card>
 
       <SpaceGoals spaceId={spaceId} />
-      <SpaceNotes spaceId={spaceId} topicName={(id) => [...space.data.topics, ...space.data.archivedTopics].find((x) => x.id === id)?.name} />
       <SpaceQuizzes spaceId={spaceId} />
     </section>
   );

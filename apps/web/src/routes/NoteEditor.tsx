@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Link2, Tag } from "lucide-react";
 import type { NoteVersion } from "@hub/contracts";
 import { MarkdownEditor } from "../components/MarkdownEditor.tsx";
-import { NoteTopics } from "../components/NoteTopics.tsx";
+import { NoteSpaces, NoteTopics } from "../components/NoteTopics.tsx";
 import { CardForm } from "../components/CardForm.tsx";
 import { Button } from "../components/ui.tsx";
 import { noteKeys, saveNote, useBacklinks, useCreateNote, useNote, useNoteMeta } from "../features/notes.ts";
@@ -167,6 +167,7 @@ export function NoteEditorPage() {
             </div>
           )}
         </div>
+        <NoteSpaces noteId={noteId} />
         <NoteTopics noteId={noteId} />
         <div>
           <h2 className="flex items-center gap-2 text-[14px] font-medium"><Tag size={14} aria-hidden />{t("editor.tags")}</h2>

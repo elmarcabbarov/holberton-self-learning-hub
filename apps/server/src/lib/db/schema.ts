@@ -26,6 +26,8 @@ export const sessions = sqliteTable("sessions", {
 
 export const spaces = sqliteTable("spaces", {
   tutorMode: text("tutor_mode", { enum: ["project", "explain"] }),
+  /** Vault folder for notes created from this space (HSLH-028); fixed once set, so renaming the space moves nothing. */
+  noteFolder: text("note_folder"),
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
@@ -235,6 +237,13 @@ export const noteTopics = sqliteTable("note_topics", {
   topicId: text("topic_id").notNull().references(() => topics.id, { onDelete: "cascade" }),
   createdAt: text("created_at").notNull(),
 }, (t) => [primaryKey({ columns: [t.noteId, t.topicId] }), index("note_topics_topic_idx").on(t.topicId)]);
+
+/** Notes linked to a space directly, independent of topics (HSLH-028). Database only; files never change (D-002). */
+export const noteSpaces = sqliteTable("note_spaces", {
+  noteId: text("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  spaceId: text("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.noteId, t.spaceId] }), index("note_spaces_space_idx").on(t.spaceId)]);
 
 /** Optional study sessions with a skippable three-field reflection (HSLH-027, D-064). */
 export const studySessions = sqliteTable("study_sessions", {
