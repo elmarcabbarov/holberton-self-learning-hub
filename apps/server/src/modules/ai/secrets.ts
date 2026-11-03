@@ -50,6 +50,19 @@ export class SecretStore {
       const data = Buffer.concat([c.update(value, "utf8"), c.final()]);
       all[name] = { v: 1, enc: true, iv: iv.toString("base64"), tag: c.getAuthTag().toString("base64"), data: data.toString("base64") };
     } else all[name] = { v: 1, enc: false, data: value };
+    await this.writeAll(all);
+  }
+
+  /** Removes every secret whose name starts with `prefix`, except `keep`. */
+  async prune(prefix: string, keep: string | null): Promise<void> {
+    const all = await this.readAll();
+    const drop = Object.keys(all).filter((n) => n.startsWith(prefix) && n !== keep);
+    if (drop.length === 0) return;
+    for (const n of drop) delete all[n];
+    await this.writeAll(all);
+  }
+
+  private async writeAll(all: Record<string, SecretRecord>): Promise<void> {
     const temp = `${this.path}.${randomBytes(6).toString("hex")}.tmp`;
     const fh = await open(temp, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
     try { await fh.writeFile(JSON.stringify(all)); await fh.sync(); } finally { await fh.close(); }

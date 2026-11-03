@@ -172,7 +172,7 @@ describe("races and fail-closed key handling", () => {
     const st = AIStatus.parse((await save({ mode: "openai_compatible", baseUrl: "https://a.example/v1", model: "m", key: { op: "replace", value: KEY }, revision: 0 })).json());
     expect(st.key.set).toBe(true);
     // Simulate a save that updated the row for endpoint B but crashed before touching the key file.
-    t.app.database.sqlite.prepare("UPDATE ai_settings SET base_url = ?, key_binding = ? WHERE id = 1").run("https://b.example/v1", "openai_compatible|https://b.example/v1");
+    t.app.database.sqlite.prepare("UPDATE ai_settings SET base_url = ?, key_binding = ? WHERE id = 1").run("https://b.example/v1", "openai_compatible|https://b.example/v1#1"); // secret #1 names endpoint A
     expect((await status()).key.set).toBe(false);
   });
 
@@ -184,6 +184,39 @@ describe("races and fail-closed key handling", () => {
     expect(seen).toHaveLength(1);
   });
 
+  it("keeps the committed key when a save fails, and prunes replaced keys after success", async () => {
+    t = await signedInApp({}, { aiFetch: fakeOpenAI([]) });
+    const st = AIStatus.parse((await save({ mode: "anthropic", model: "claude-x", key: { op: "replace", value: KEY }, revision: 0 })).json());
+    const db = t.app.database.sqlite;
+    db.exec("CREATE TRIGGER fail_ai BEFORE UPDATE ON ai_settings BEGIN SELECT RAISE(ABORT, 'boom'); END");
+    expect((await save({ mode: "anthropic", model: "claude-x", key: { op: "replace", value: "sk-other-key-9999" }, revision: st.revision })).statusCode).toBe(500);
+    db.exec("DROP TRIGGER fail_ai");
+    expect((await status()).key).toMatchObject({ set: true, mask: "…abcd" });
+    await save({ mode: "anthropic", model: "claude-x", key: { op: "replace", value: "sk-other-key-9999" }, revision: st.revision });
+    const names = Object.keys(JSON.parse(readFileSync(join(t.dir, "data", "secrets.json"), "utf8")) as object);
+    expect(names).toEqual(["ai_api_key#2"]);
+    expect((await status()).key.mask).toBe("…9999");
+  });
+
+  it("treats an explicit refusal field as a final refusal", async () => {
+    const seen: Seen[] = [];
+    const refusing = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      seen.push({ url: String(input), headers: {}, body: JSON.parse(String(init?.body)), redirect: init?.redirect });
+      return Response.json({ id: "c1", object: "chat.completion", created: 1, model: "m", choices: [{ index: 0, message: { role: "assistant", content: null, refusal: "I can't help with that." }, finish_reason: "stop" }] });
+    }) as typeof fetch;
+    const p = new SdkProvider("t", createOpenAICompatible({ name: "t", baseURL: OLLAMA, fetch: refusing, supportsStructuredOutputs: true }).chatModel("m"));
+    expect(await p.generateObject({ prompt: "x", schema: z.object({ answer: z.number() }), maxOutputTokens: 64 }, new AbortController().signal)).toMatchObject({ ok: false, error: "refused" });
+    expect(seen.length).toBeLessThanOrEqual(2);
+  });
+
+  it("sends a large schema whole in the fallback prompt", async () => {
+    const seen: Seen[] = [];
+    const big = z.object(Object.fromEntries(Array.from({ length: 200 }, (_, i) => [`field${i}`, z.string()])));
+    const p = new SdkProvider("t", createOpenAICompatible({ name: "t", baseURL: OLLAMA, fetch: fakeOpenAI(seen, { json: ["nope"] }) }).chatModel("m"));
+    await p.generateObject({ prompt: "x", schema: big, maxOutputTokens: 64, maxAttempts: 2 }, new AbortController().signal);
+    expect(String((seen[1]!.body.messages as { content: string }[]).at(-1)!.content)).toContain('"field199"');
+  });
+
   it("applies the deadline to DNS resolution too", async () => {
     const f = guardedFetch(30, (async () => new Response("x")) as typeof fetch, () => new Promise(() => undefined));
     await expect(f("http://stalled.example/v1/chat/completions")).rejects.toMatchObject({ name: "TimeoutError" });
@@ -192,6 +225,14 @@ describe("races and fail-closed key handling", () => {
     const pending = g("http://stalled.example/v1", { signal: ac.signal });
     ac.abort();
     await expect(pending).rejects.toBeDefined();
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    const pre = new AbortController(); pre.abort();
+    const h = guardedFetch(60_000, (async () => new Response("x")) as typeof fetch, () => Promise.reject(new Error("nxdomain")));
+    await expect(h("http://gone.example/v1", { signal: pre.signal })).rejects.toBeDefined();
+    await new Promise((r) => setTimeout(r, 10));
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
   });
 });
 
@@ -225,6 +266,7 @@ describe("endpoint policy", () => {
     for (const ip of ["169.254.169.254", "0.0.0.0", "224.0.0.1", "fe80::1", "::", "ff02::1", "::ffff:169.254.169.254", "::ffff:a9fe:a9fe", "0:0:0:0:0:ffff:a9fe:a9fe", "::ffff:0:0", "fe80::1%eth0", "FF02::1", "fd00:ec2:0::254", "nonsense"]) expect(addressBlocked(ip)).toBe(true);
     for (const ip of ["127.0.0.1", "192.168.1.20", "10.0.0.5", "::1", "203.0.113.10"]) expect(addressBlocked(ip)).toBe(false);
     expect(addressBlocked("::ffff:7f00:1")).toBe(false); // mapped loopback is loopback
+    for (const bad of ["1:2:3:4:5:6:7::8", "::ffff:010.0.0.1", "1::2::3"]) expect(addressBlocked(bad)).toBe(true);
     expect(new URL("http://[::ffff:169.254.169.254]/").hostname).toBe("[::ffff:a9fe:a9fe]"); // why hex forms matter
     expect(validateBaseUrl("http://localhost:11434/v1/")).toBe("http://localhost:11434/v1");
     expect(localityOf("https://fcloud.example/v1")).toBe("remote");

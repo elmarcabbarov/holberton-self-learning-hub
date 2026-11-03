@@ -17,12 +17,14 @@ const KEY = ["ai", "status"] as const;
 export function AIPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const status = useQuery({ queryKey: KEY, queryFn: () => apiJson("/api/ai/status", AIStatus) });
-  // A late answer (a slow probe, an old refetch) must never roll the form back to an older revision.
-  const accept = async (next: AIStatus) => {
-    await qc.cancelQueries({ queryKey: KEY });
-    qc.setQueryData<AIStatus>(KEY, (cur) => (cur && cur.revision > next.revision ? cur : next));
+  // A late answer (a slow probe, an old refetch) must never roll the form back to an older revision, and a
+  // newer one must never be discarded: every path keeps whichever revision is higher.
+  const newest = (next: AIStatus) => {
+    const cur = qc.getQueryData<AIStatus>(KEY);
+    return cur && cur.revision > next.revision ? cur : next;
   };
+  const status = useQuery({ queryKey: KEY, queryFn: async () => newest(await apiJson("/api/ai/status", AIStatus)) });
+  const accept = (next: AIStatus) => { qc.setQueryData<AIStatus>(KEY, newest(next)); };
   const [mode, setMode] = useState<AIMode>("disabled");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");

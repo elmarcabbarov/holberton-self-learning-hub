@@ -33,7 +33,7 @@ const FINAL: AIErrorCode[] = ["auth", "cancelled", "refused", "unreachable", "ti
 export function mapError(e: unknown, signal?: AbortSignal): AIErrorCode {
   if (signal?.aborted) return signal.reason instanceof DOMException && signal.reason.name === "TimeoutError" ? "timeout" : "cancelled";
   if (e instanceof EndpointError) return "unreachable";
-  if (e instanceof NoObjectGeneratedError) return e.finishReason === "content-filter" ? "refused" : "schema_invalid";
+  if (e instanceof NoObjectGeneratedError) return e.finishReason === "content-filter" || refusedBody(e) ? "refused" : "schema_invalid";
   if (APICallError.isInstance(e)) {
     const s = e.statusCode ?? 0;
     if (s === 401 || s === 403) return "auth";
@@ -49,13 +49,24 @@ export function mapError(e: unknown, signal?: AbortSignal): AIErrorCode {
   return "unknown";
 }
 
+/**
+ * True when the raw provider answer is an explicit refusal: OpenAI-style `message.refusal`, or Anthropic's
+ * `stop_reason: "refusal"`. Only the flag is read; the refusal text is never surfaced.
+ */
+function refusedBody(x: unknown): boolean {
+  const body = (x as { response?: { body?: unknown } } | null)?.response?.body as
+    { choices?: { message?: { refusal?: unknown } }[]; stop_reason?: unknown } | undefined;
+  if (!body || typeof body !== "object") return false;
+  return Boolean(body.choices?.[0]?.message?.refusal) || body.stop_reason === "refusal";
+}
+
 const sys = (req: { system?: string }) => (req.system ? { system: req.system } : {});
 const usageOf = (u: { inputTokens?: number | undefined; outputTokens?: number | undefined } | undefined): Usage =>
   ({ inputTokens: u?.inputTokens ?? null, outputTokens: u?.outputTokens ?? null }); // missing = unknown, never 0
 
 /** The JSON Schema as text for prompts; null when the schema cannot be represented (the model then gets none). */
 function schemaText(schema: z.ZodType): string | null {
-  try { return JSON.stringify(z.toJSONSchema(schema, { unrepresentable: "any" })).slice(0, 4000); } catch { return null; }
+  try { return JSON.stringify(z.toJSONSchema(schema, { unrepresentable: "any" })); } catch { return null; } // never cut: half a schema misleads
 }
 
 /** Pulls the first JSON object out of a model's text answer. */
@@ -121,7 +132,7 @@ export class SdkProvider implements AIProvider {
         : `${req.prompt}\n\nYour previous answer was not valid:\n${previous.slice(0, 2000)}\nProblems: ${issues}\nAnswer again with one corrected JSON object only.${schemaLine}`;
       try {
         const r = await generateText({ model: this.model, ...sys(req), prompt, maxOutputTokens: req.maxOutputTokens, maxRetries: 0, abortSignal: signal });
-        if (r.finishReason === "content-filter") return { ok: false, error: "refused", attempts };
+        if (r.finishReason === "content-filter" || refusedBody(r)) return { ok: false, error: "refused", attempts };
         previous = r.text;
         let parsed: unknown;
         try { parsed = extractJson(r.text); } catch { issues = "not JSON"; last = "schema_invalid"; continue; }

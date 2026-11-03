@@ -11,7 +11,7 @@ import { MockProvider, SdkProvider, type AIProvider } from "./provider.ts";
 import { maskSecret, type SecretStore } from "./secrets.ts";
 
 type Row = typeof aiSettings.$inferSelect;
-const KEY = "ai_api_key";
+const KEY = "ai_api_key#"; // + the revision that stored it: a new key never overwrites the committed one
 const ANTHROPIC_URL = "https://api.anthropic.com/v1";
 const CALL_TIMEOUT_MS = 60_000;
 const PROBE_GAP_MS = 5_000;
@@ -72,8 +72,9 @@ export class AIService {
    */
   private async keyFor(r: Row): Promise<string | null> {
     const binding = this.binding(r);
-    if (r.keyBinding !== binding) return null;
-    const raw = await this.secrets.get(KEY);
+    const cut = r.keyBinding?.lastIndexOf("#") ?? -1;
+    if (!r.keyBinding || cut < 0 || r.keyBinding.slice(0, cut) !== binding) return null;
+    const raw = await this.secrets.get(KEY + r.keyBinding.slice(cut + 1));
     if (!raw) return null;
     try {
       const v = JSON.parse(raw) as { b?: unknown; k?: unknown };
@@ -119,20 +120,22 @@ export class AIService {
     // A key moves with its endpoint only when it is entered again; switching endpoints drops it.
     const sameEndpoint = this.binding(current) === this.binding(next);
     const keyAction: "keep" | "set" | "clear" = input.key.op === "replace" ? "set" : input.key.op === "clear" || !sameEndpoint ? "clear" : "keep";
-    // The secret is written first. It names its endpoint, so until the row agrees no reader can pair it with
-    // another endpoint; if the row update then fails, the old key is gone, never sent somewhere new.
-    if (keyAction === "set" && input.key.op === "replace") await this.secrets.set(KEY, JSON.stringify({ b: this.binding(next), k: input.key.value }));
-    if (keyAction === "clear") await this.secrets.set(KEY, null);
+    // A new key is staged under the next revision's name and names its endpoint. The row switches to it in
+    // the transaction; only then are older keys removed. A failed or interrupted save keeps the committed key,
+    // and no reader can pair a key with an endpoint it was not saved for.
+    const version = String(current.revision + 1);
+    if (keyAction === "set" && input.key.op === "replace") await this.secrets.set(KEY + version, JSON.stringify({ b: this.binding(next), k: input.key.value }));
     const changed = this.db.transaction((tx) => {
       const r = tx.select().from(aiSettings).where(eq(aiSettings.id, 1)).get()!;
       if (r.revision !== input.revision) return false;
       tx.update(aiSettings).set({
         mode: input.mode, baseUrl, model: input.model, maxOutputTokens: input.maxOutputTokens, revision: r.revision + 1,
-        keyBinding: keyAction === "set" ? this.binding(next) : keyAction === "clear" ? null : r.keyBinding,
+        keyBinding: keyAction === "set" ? `${this.binding(next)}#${version}` : keyAction === "clear" ? null : r.keyBinding,
       }).where(eq(aiSettings.id, 1)).run();
       return true;
     }, IMMEDIATE);
     if (!changed) return { kind: "conflict" };
+    if (keyAction !== "keep") await this.secrets.prune(KEY, keyAction === "set" ? KEY + version : null);
     return { kind: "ok", status: await this.status() };
   }
 

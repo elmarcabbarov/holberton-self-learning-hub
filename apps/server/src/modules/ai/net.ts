@@ -30,6 +30,7 @@ function v4Blocked(ip: string): boolean {
 /** Eight 16-bit groups of an IPv6 address (zone id dropped, embedded dotted IPv4 expanded), or null. */
 export function parseV6(ip: string): number[] | null {
   let x = ip.toLowerCase().replace(/%.*$/, "");
+  if (isIP(x) !== 6) return null; // Node's parser decides validity; the code below only expands
   const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(x);
   if (dotted) {
     const o = dotted.slice(1).map(Number);
@@ -86,7 +87,9 @@ export async function checkHost(hostname: string, resolve: Resolve = systemResol
   let answers: { address: string }[];
   if (isIP(host)) answers = [{ address: host }];
   else {
+    signal?.throwIfAborted(); // before starting a lookup nobody would wait for
     const lookup = resolve(host).catch(() => { throw new EndpointError("dns_failed"); });
+    if (signal) lookup.catch(() => undefined); // abandoned on abort: its later rejection must stay handled
     answers = signal ? await untilAborted(lookup, signal) : await lookup;
   }
   if (answers.length === 0 || answers.some((a) => addressBlocked(a.address))) throw new EndpointError("blocked_address");
